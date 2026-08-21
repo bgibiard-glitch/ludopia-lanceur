@@ -354,6 +354,11 @@ body:not(.mac) .barre {
   isolation: isolate;
 }
 
+/* Les captures sont des captures de JEU : elles portent des boutons et des
+   panneaux dont le texte reste lisible en fond d'affiche, ce qui se lit comme
+   un défaut d'affichage plutôt que comme un décor. On les floute donc, comme
+   le font les vitrines de jeux. L'agrandissement doit rester supérieur au
+   rayon de flou, sinon les bords transparents du flou apparaissent. */
 .affiche-fond {
   position: absolute;
   inset: 0;
@@ -361,26 +366,32 @@ body:not(.mac) .barre {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  object-position: center 28%;
-  filter: saturate(1.05);
-  transform: scale(1.04);
-  animation: derive 22s var(--ease) infinite alternate;
+  object-position: center center;
+  /* Beaucoup de flou et peu d'assombrissement : c'est le flou qui rend le
+     texte illisible, pas le noir. Assombrir suffisamment pour effacer une
+     interface donnerait un rectangle sans couleur, et l'affiche perdrait
+     l'identite du jeu. La saturation compense le lissage. */
+  filter: blur(38px) saturate(1.7) brightness(0.92);
+  transform: scale(1.35);
+  animation: derive 26s var(--ease) infinite alternate;
 }
 @keyframes derive {
   to {
-    transform: scale(1.11) translate3d(-1.4%, -1%, 0);
+    transform: scale(1.45) translate3d(-1.6%, -1.2%, 0);
   }
 }
 
-/* Sans ce voile, le titre passerait sur n'importe quelle zone claire de la capture. */
+/* Sans ce voile, le titre passerait sur n'importe quelle zone claire de la
+   capture. Il reste plus léger qu'avant : le fond est déjà assombri par son
+   propre filtre, et deux assombrissements cumulés donneraient un rectangle noir. */
 .affiche::after {
   content: '';
   position: absolute;
   inset: 0;
   z-index: -1;
   background:
-    linear-gradient(180deg, rgba(6, 6, 15, 0.36) 0%, rgba(6, 6, 15, 0.72) 46%, var(--bg) 100%),
-    radial-gradient(120% 90% at 8% 100%, color-mix(in srgb, var(--accent) 26%, transparent), transparent 62%);
+    linear-gradient(180deg, rgba(6, 6, 15, 0.34) 0%, rgba(6, 6, 15, 0.62) 48%, var(--bg) 100%),
+    radial-gradient(120% 90% at 8% 100%, color-mix(in srgb, var(--accent) 30%, transparent), transparent 62%);
 }
 
 .affiche--nu {
@@ -665,5 +676,276 @@ body:not(.mac) .barre {
   }
   * {
     transition-duration: 0.01ms !important;
+  }
+}
+
+/* --- mise à jour ------------------------------------------------------------
+   Le bouton ne s'affiche que lorsqu'il y a quelque chose à dire : une ligne
+   « à jour » permanente n'apprend rien et encombre le rail. */
+.rail-maj {
+  display: block;
+  width: 100%;
+  margin-top: 8px;
+  padding: 7px 10px;
+  text-align: left;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--ink-dim);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  transition: background 0.2s, border-color 0.2s, color 0.2s;
+}
+.rail-maj[hidden] {
+  display: none;
+}
+.rail-maj:hover {
+  color: var(--ink);
+  border-color: var(--line-strong);
+  background: var(--surface-2);
+}
+/* Prête à installer : c'est la seule phase qui appelle une action. */
+.rail-maj[data-phase='prete'] {
+  color: var(--accent-ink);
+  background: var(--brand);
+  border-color: transparent;
+}
+.rail-maj[data-phase='erreur'] {
+  color: #ff8fb8;
+}
+
+/* =============================================================================
+   ACCUEIL — vos chiffres, la reprise, les nouvelles du studio
+   ========================================================================== */
+
+.rail-accueil {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  width: 100%;
+  padding: 10px 10px;
+  margin-bottom: 14px;
+  text-align: left;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--ink-dim);
+  border-radius: 11px;
+  transition: background 0.18s var(--ease), color 0.18s;
+}
+.rail-accueil svg {
+  width: 20px;
+  height: 20px;
+  flex: none;
+  margin: 0 7px;
+}
+.rail-accueil:hover {
+  background: var(--surface);
+  color: var(--ink);
+}
+.rail-accueil[aria-current='true'] {
+  background: var(--surface-2);
+  color: var(--ink);
+}
+.rail-accueil[aria-current='true']::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 22%;
+  bottom: 22%;
+  width: 3px;
+  border-radius: 99px;
+  background: var(--brand);
+}
+
+.acc-tete {
+  padding: 38px 44px 26px;
+  background:
+    radial-gradient(90% 120% at 6% 0%, color-mix(in srgb, var(--brand) 20%, transparent), transparent 62%),
+    linear-gradient(180deg, var(--bg-2), var(--bg));
+}
+.acc-tete h1 {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: clamp(1.7rem, 3.4vw, 2.5rem);
+  letter-spacing: -0.03em;
+}
+
+.chiffres {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 168px), 1fr));
+  gap: 12px;
+  margin-top: 22px;
+}
+.chiffre {
+  padding: 16px 18px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 15px;
+}
+.chiffre b {
+  display: block;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 1.5rem;
+  line-height: 1.15;
+  letter-spacing: -0.03em;
+  color: var(--ink);
+  /* Le nom du jeu le plus joué peut être long : mieux vaut couper que déborder. */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.chiffre span {
+  display: block;
+  margin-top: 5px;
+  font-size: 0.72rem;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.acc-note {
+  margin-top: 16px;
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+
+.acc-bloc {
+  padding: 30px 44px;
+}
+.acc-bloc h2 {
+  margin-bottom: 14px;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.72rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.acc-bloc .action-secondaire {
+  margin-top: 18px;
+}
+
+.acc-vide {
+  max-width: 74ch;
+  color: var(--ink-dim);
+  font-size: 0.95rem;
+  text-wrap: pretty;
+}
+
+/* --- reprendre --- */
+
+.reprise {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  min-height: 190px;
+  padding: 24px 26px;
+  border-radius: var(--radius, 18px);
+  overflow: hidden;
+  isolation: isolate;
+  border: 1px solid var(--line);
+}
+.reprise-fond {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  /* Même traitement que l'affiche : les captures portent des interfaces
+     lisibles, illisibles seulement une fois floutées. */
+  filter: blur(30px) saturate(1.6) brightness(0.9);
+  transform: scale(1.3);
+}
+.reprise::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(90deg, rgba(6, 6, 15, 0.82) 0%, rgba(6, 6, 15, 0.4) 70%);
+}
+.reprise-nom {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 1.7rem;
+  letter-spacing: -0.03em;
+}
+.reprise-meta {
+  margin: 3px 0 16px;
+  font-size: 0.88rem;
+  color: var(--ink-dim);
+}
+
+/* --- nouvelles --- */
+
+.nouvelles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 288px), 1fr));
+  gap: 14px;
+}
+.nouvelle {
+  position: relative;
+  padding: 18px 20px 18px 22px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 15px;
+  transition: border-color 0.2s, background 0.2s;
+}
+.nouvelle::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 18px;
+  bottom: 18px;
+  width: 3px;
+  border-radius: 99px;
+  background: var(--accent);
+}
+.nouvelle:hover {
+  border-color: var(--line-strong);
+  background: var(--surface-2);
+}
+.nouvelle-meta {
+  font-size: 0.72rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.nouvelle h3 {
+  margin: 6px 0 7px;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.02rem;
+  line-height: 1.25;
+  letter-spacing: -0.015em;
+  text-wrap: balance;
+}
+.nouvelle-resume {
+  font-size: 0.9rem;
+  color: var(--ink-dim);
+  /* Trois lignes : au-delà, la grille se déséquilibre selon la longueur. */
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+@media (max-width: 1020px) {
+  .acc-tete {
+    padding: 30px 30px 22px;
+  }
+  .acc-bloc {
+    padding: 26px 30px;
+  }
+}
+@media (max-width: 820px) {
+  .rail-accueil span {
+    display: none;
+  }
+  .rail-accueil {
+    justify-content: center;
   }
 }

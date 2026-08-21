@@ -38,6 +38,25 @@ const TEXTES = {
     hier: 'hier',
     ilYaJours: (n) => `il y a ${n} jours`,
     lanceur: 'Lanceur',
+    majRecherche: 'Recherche d’une mise à jour…',
+    majTelechargement: 'Téléchargement',
+    majPrete: 'Mise à jour prête',
+    majAJour: 'Rechercher une mise à jour',
+    majErreur: 'Mise à jour indisponible',
+    accueil: 'Accueil',
+    bonjour: 'Votre bibliothèque',
+    totalTemps: 'Temps de jeu total',
+    totalParties: 'Parties lancées',
+    jeuxJoues: 'Jeux essayés',
+    prefere: 'Le plus joué',
+    aucun: 'aucun',
+    reprendre2: 'Reprendre',
+    nouvelles: 'Les nouvelles du studio',
+    toutesNouvelles: 'Toutes les actualités',
+    nouvellesVides: 'Les nouvelles arriveront dès que le réseau répondra.',
+    amis: 'Vos amis',
+    amisBientot: 'Le réseau d’amis — voir qui joue à quoi, se parler, se lancer des défis — demande un compte Ludopia. Il n’existe pas encore : rien n’est donc affiché ici plutôt que de faire semblant.',
+    riensurvous: 'Rien n’est envoyé à Ludopia : ces chiffres ne quittent pas votre machine.',
   },
   en: {
     bibliotheque: 'Library',
@@ -69,6 +88,25 @@ const TEXTES = {
     hier: 'yesterday',
     ilYaJours: (n) => `${n} days ago`,
     lanceur: 'Launcher',
+    majRecherche: 'Checking for updates…',
+    majTelechargement: 'Downloading',
+    majPrete: 'Update ready',
+    majAJour: 'Check for updates',
+    majErreur: 'Updates unavailable',
+    accueil: 'Home',
+    bonjour: 'Your library',
+    totalTemps: 'Total time played',
+    totalParties: 'Sessions started',
+    jeuxJoues: 'Games tried',
+    prefere: 'Most played',
+    aucun: 'none',
+    reprendre2: 'Resume',
+    nouvelles: 'News from the studio',
+    toutesNouvelles: 'All the news',
+    nouvellesVides: 'News will show up as soon as the network answers.',
+    amis: 'Your friends',
+    amisBientot: 'The friends network — seeing who plays what, chatting, sending challenges — needs a Ludopia account. There is none yet, so nothing is shown here rather than pretending.',
+    riensurvous: 'Nothing is sent to Ludopia: these numbers never leave your machine.',
   },
 };
 
@@ -82,6 +120,8 @@ let etat = {
   ouverts: [],
   joignables: {},   // id -> true | false | undefined (pas encore vérifié)
   choisi: null,
+  vue: 'accueil',   // 'accueil' ou 'jeu'
+  actualites: null,
 };
 
 const T = () => TEXTES[etat.langue];
@@ -135,6 +175,7 @@ function libelleEtat(cle) {
 function dessinerRail() {
   const rail = $('#rail');
   rail.textContent = '';
+  $('#accueil')?.setAttribute('aria-current', String(etat.vue === 'accueil'));
 
   for (const jeu of etat.catalogue.jeux) {
     const cle = etatJeu(jeu);
@@ -329,10 +370,191 @@ function dessinerScene() {
   scene.scrollTop = 0;
 }
 
+
+// =============================================================================
+// Accueil
+// =============================================================================
+
+/** Somme des minutes, parties et jeux essayés, tous titres confondus. */
+function bilan() {
+  let minutes = 0;
+  let lancements = 0;
+  let essayes = 0;
+  let prefere = null;
+
+  for (const jeu of etat.catalogue.jeux) {
+    const s = etat.stats[jeu.id];
+    if (!s) continue;
+    minutes += s.minutes || 0;
+    lancements += s.lancements || 0;
+    if (s.lancements) essayes += 1;
+    if (!prefere || (s.minutes || 0) > (etat.stats[prefere.id]?.minutes || 0)) {
+      if (s.minutes) prefere = jeu;
+    }
+  }
+  return { minutes, lancements, essayes, prefere };
+}
+
+function carteChiffre(valeur, libelle) {
+  const el = document.createElement('div');
+  el.className = 'chiffre';
+  const b = document.createElement('b');
+  b.textContent = valeur;
+  const s = document.createElement('span');
+  s.textContent = libelle;
+  el.append(b, s);
+  return el;
+}
+
+function dessinerAccueil() {
+  const t = T();
+  const scene = $('#scene');
+  scene.textContent = '';
+  scene.style.setProperty('--accent', 'var(--brand)');
+  scene.style.setProperty('--accent-ink', '#080813');
+
+  const b = bilan();
+
+  // --- en-tête et chiffres ---
+  const tete = document.createElement('section');
+  tete.className = 'acc-tete';
+  const h1 = document.createElement('h1');
+  h1.textContent = t.bonjour;
+  tete.append(h1);
+
+  const chiffres = document.createElement('div');
+  chiffres.className = 'chiffres';
+  chiffres.append(
+    carteChiffre(duree(b.minutes), t.totalTemps),
+    carteChiffre(String(b.lancements), t.totalParties),
+    carteChiffre(`${b.essayes} / ${etat.catalogue.jeux.length}`, t.jeuxJoues),
+    carteChiffre(b.prefere ? b.prefere.nom : t.aucun, t.prefere),
+  );
+  tete.append(chiffres);
+
+  const note = document.createElement('p');
+  note.className = 'acc-note';
+  note.textContent = t.riensurvous;
+  tete.append(note);
+  scene.append(tete);
+
+  // --- reprendre la dernière partie ---
+  const dernier = etat.catalogue.jeux.find((j) => j.id === etat.choisi && j.url)
+    || etat.catalogue.jeux.find((j) => etat.stats[j.id]?.lancements && j.url);
+  if (dernier) {
+    const bloc = document.createElement('section');
+    bloc.className = 'acc-bloc';
+    bloc.style.setProperty('--accent', dernier.accent);
+    bloc.style.setProperty('--accent-ink', dernier.encre || '#080813');
+
+    const h2 = document.createElement('h2');
+    h2.textContent = t.reprendre2;
+    bloc.append(h2);
+
+    const carte = document.createElement('div');
+    carte.className = 'reprise';
+    if (dernier.jaquette) {
+      const img = document.createElement('img');
+      img.className = 'reprise-fond';
+      img.src = dernier.jaquette;
+      img.alt = '';
+      carte.append(img);
+    }
+    const corps = document.createElement('div');
+    corps.className = 'reprise-corps';
+    const nom = document.createElement('p');
+    nom.className = 'reprise-nom';
+    nom.textContent = dernier.nom;
+    const meta = document.createElement('p');
+    meta.className = 'reprise-meta';
+    meta.textContent = `${duree(etat.stats[dernier.id]?.minutes || 0)} · ${quand(etat.stats[dernier.id]?.derniereFois)}`;
+    const bouton = document.createElement('button');
+    bouton.type = 'button';
+    bouton.className = 'jouer';
+    bouton.innerHTML = ICONE_JOUER;
+    bouton.append(etat.ouverts.includes(dernier.id) ? t.reprendre : t.jouer);
+    bouton.addEventListener('click', () => window.ludopia.lancer(dernier.id));
+    corps.append(nom, meta, bouton);
+    carte.append(corps);
+    bloc.append(carte);
+    scene.append(bloc);
+  }
+
+  // --- les nouvelles ---
+  const bloc = document.createElement('section');
+  bloc.className = 'acc-bloc';
+  const h2 = document.createElement('h2');
+  h2.textContent = t.nouvelles;
+  bloc.append(h2);
+
+  const articles = etat.actualites?.langues?.[etat.langue]?.articles || [];
+  if (!articles.length) {
+    const vide = document.createElement('p');
+    vide.className = 'acc-vide';
+    vide.textContent = t.nouvellesVides;
+    bloc.append(vide);
+  } else {
+    const liste = document.createElement('div');
+    liste.className = 'nouvelles';
+    for (const a of articles.slice(0, 6)) {
+      const el = document.createElement('article');
+      el.className = 'nouvelle';
+      el.style.setProperty('--accent', a.accent);
+      const meta = document.createElement('p');
+      meta.className = 'nouvelle-meta';
+      meta.textContent = [a.date, a.jeu, a.version].filter(Boolean).join(' · ');
+      const titre = document.createElement('h3');
+      titre.textContent = a.titre;
+      const resume = document.createElement('p');
+      resume.className = 'nouvelle-resume';
+      resume.textContent = a.resume;
+      el.append(meta, titre, resume);
+      liste.append(el);
+    }
+    bloc.append(liste);
+
+    const lien = document.createElement('button');
+    lien.type = 'button';
+    lien.className = 'action-secondaire';
+    lien.textContent = t.toutesNouvelles;
+    const url = etat.actualites.langues[etat.langue].url;
+    lien.addEventListener('click', () => window.ludopia.ouvrirLien(url));
+    bloc.append(lien);
+  }
+  scene.append(bloc);
+
+  // --- les amis, honnêtement ---
+  const amis = document.createElement('section');
+  amis.className = 'acc-bloc';
+  const h2a = document.createElement('h2');
+  h2a.textContent = t.amis;
+  const p = document.createElement('p');
+  p.className = 'acc-vide';
+  p.textContent = t.amisBientot;
+  amis.append(h2a, p);
+  scene.append(amis);
+
+  scene.scrollTop = 0;
+}
+
+function ouvrirAccueil() {
+  etat.vue = 'accueil';
+  dessinerRail();
+  dessinerAccueil();
+}
+
 function choisir(id) {
   etat.choisi = id;
+  etat.vue = 'jeu';
   dessinerRail();
   dessinerScene();
+}
+
+/** Redessine la vue courante — accueil ou fiche de jeu. */
+function redessiner() {
+  dessinerRail();
+  if (etat.vue === 'accueil') dessinerAccueil();
+  else dessinerScene();
 }
 
 // =============================================================================
@@ -365,13 +587,40 @@ function sonder() {
   Promise.all(aSonder.map((jeu) => window.ludopia.joignable(jeu.id).then((ok) => {
     etat.joignables[jeu.id] = ok;
     dessinerRail();
-    if (etat.choisi === jeu.id) dessinerScene();
+    // Sans le test sur la vue, la réponse du sondage écrasait la page
+    // d'accueil par la fiche du jeu resté sélectionné.
+    if (etat.vue === 'jeu' && etat.choisi === jeu.id) dessinerScene();
     return ok;
   }).catch(() => false))).then((resultats) => {
     sondageEnCours = false;
     const toutVaBien = resultats.every(Boolean);
     prochainSondage = setTimeout(sonder, toutVaBien ? 120000 : 20000);
   });
+}
+
+/**
+ * Le bouton de mise à jour reste caché quand rien ne se passe : une ligne
+ * « à jour » permanente n'apprend rien et encombre le rail. Il n'apparaît que
+ * lorsqu'il y a quelque chose à dire ou à faire.
+ */
+function dessinerMaj(etat) {
+  const bouton = $('#maj');
+  if (!bouton) return;
+  const t = T();
+
+  const libelles = {
+    recherche: t.majRecherche,
+    telechargement: `${t.majTelechargement} ${etat.progression || 0} %`,
+    prete: `${t.majPrete} — ${etat.version || ''}`,
+    erreur: t.majErreur,
+  };
+
+  const texte = libelles[etat.phase];
+  bouton.hidden = !texte;
+  if (texte) {
+    bouton.textContent = texte;
+    bouton.dataset.phase = etat.phase;
+  }
 }
 
 function appliquerLangue() {
@@ -399,22 +648,29 @@ async function demarrer() {
 
   await rafraichirStats();
   appliquerLangue();
-  dessinerRail();
-  dessinerScene();
+  ouvrirAccueil();
   sonder();
+
+  $('#accueil')?.addEventListener('click', ouvrirAccueil);
+
+  // Les nouvelles arrivent du site : la page s'affiche sans les attendre.
+  window.ludopia.actualites().then((flux) => {
+    if (!flux) return;
+    etat.actualites = flux;
+    if (etat.vue === 'accueil') dessinerAccueil();
+  });
 
   // Le temps de jeu affiché doit avancer pendant qu'une partie tourne.
   setInterval(async () => {
     if (!etat.ouverts.length) return;
     await rafraichirStats();
-    dessinerScene();
+    redessiner();
   }, 60000);
 
   window.ludopia.surChangementJeux(async (ouverts) => {
     etat.ouverts = ouverts;
     await rafraichirStats();
-    dessinerRail();
-    dessinerScene();
+    redessiner();
   });
 
   // Au retour dans la fenêtre — reprise de veille, changement de réseau —
@@ -427,18 +683,20 @@ async function demarrer() {
     if (!catalogue.jeux.some((j) => j.id === etat.choisi)) {
       etat.choisi = catalogue.jeux[0].id;
     }
-    dessinerRail();
-    dessinerScene();
+    redessiner();
     sonder();
   });
+
+  window.ludopia.surMaj(dessinerMaj);
+  window.ludopia.majEtat().then(dessinerMaj);
+  $('#maj')?.addEventListener('click', () => window.ludopia.majChercher());
 
   $('[data-langue]').addEventListener('click', async () => {
     etat.langue = etat.langue === 'fr' ? 'en' : 'fr';
     await window.ludopia.definirLangue(etat.langue);
     $('#version').textContent = `${T().lanceur} ${depart.versionLanceur}`;
     appliquerLangue();
-    dessinerRail();
-    dessinerScene();
+    redessiner();
   });
 
   for (const el of document.querySelectorAll('[data-ouvrir]')) {

@@ -22,6 +22,18 @@ contextBridge.exposeInMainWorld('ludopia', {
   definirLangue: (langue) => ipcRenderer.invoke('langue:definir', langue),
   ouvrirLien: (url) => ipcRenderer.invoke('lien:ouvrir', url),
 
+  actualites: () => ipcRenderer.invoke('actualites:lire'),
+
+  majEtat: () => ipcRenderer.invoke('maj:etat'),
+  majChercher: () => ipcRenderer.invoke('maj:chercher'),
+
+  /** Suit la recherche, le téléchargement et la disponibilité d'une mise à jour. */
+  surMaj: (rappel) => {
+    const ecouteur = (_evt, etat) => rappel(etat);
+    ipcRenderer.on('maj:changement', ecouteur);
+    return () => ipcRenderer.removeListener('maj:changement', ecouteur);
+  },
+
   /** Prévient quand une fenêtre de jeu s'ouvre ou se ferme. */
   surChangementJeux: (rappel) => {
     const ecouteur = (_evt, ouverts) => rappel(ouverts);

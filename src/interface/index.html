@@ -24,12 +24,20 @@
 
     <div class="cadre">
       <nav class="rail" aria-label="Bibliothèque">
+        <button class="rail-accueil" id="accueil" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+               stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1Z" />
+          </svg>
+          <span data-t="accueil">Accueil</span>
+        </button>
         <p class="rail-titre" data-t="bibliotheque">Bibliothèque</p>
         <ul class="rail-liste" id="rail"></ul>
         <div class="rail-pied">
           <button class="rail-lien" type="button" data-ouvrir="https://ludopia.fr" data-t="siteWeb">
             Site de Ludopia
           </button>
+          <button class="rail-maj" id="maj" type="button" hidden></button>
           <p class="rail-version" id="version"></p>
         </div>
       </nav>

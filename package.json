@@ -1,7 +1,7 @@
 {
   "name": "ludopia-lanceur",
   "productName": "Ludopia",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Le lanceur Ludopia : la bibliothèque des jeux du studio, en application de bureau.",
   "author": {
     "name": "Ludopia",
@@ -38,7 +38,13 @@
     ],
     "win": {
       "target": [
-        { "target": "nsis", "arch": ["x64", "arm64"] }
+        {
+          "target": "nsis",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        }
       ],
       "icon": "ressources/icon.ico"
     },
@@ -55,7 +61,13 @@
     },
     "mac": {
       "target": [
-        { "target": "dmg", "arch": ["x64", "arm64"] }
+        {
+          "target": "dmg",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        }
       ],
       "icon": "ressources/icon.icns",
       "category": "public.app-category.games",
@@ -68,10 +80,24 @@
       "title": "Ludopia"
     },
     "linux": {
-      "target": ["AppImage", "deb"],
+      "target": [
+        "AppImage",
+        "deb"
+      ],
       "icon": "ressources/icones",
       "category": "Game",
       "maintainer": "Ludopia <contact@ludopia.fr>"
-    }
+    },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "bgibiard-glitch",
+        "repo": "ludopia-lanceur",
+        "releaseType": "release"
+      }
+    ]
+  },
+  "dependencies": {
+    "electron-updater": "^6.8.9"
   }
 }

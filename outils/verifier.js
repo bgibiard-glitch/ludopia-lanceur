@@ -56,14 +56,18 @@ function verifier(intitule, condition, detail = '') {
   verifier('noms des jeux', noms.join(', ') === 'World Blocks, Villopia, Tradopia, Equipia',
     noms.join(', '));
 
-  const h1 = await bibliotheque.locator('.affiche h1').textContent();
-  verifier('une affiche est ouverte au démarrage', Boolean(h1), h1);
+  const titreAccueil = await bibliotheque.locator('.acc-tete h1').textContent();
+  verifier("la page d'accueil s'ouvre au démarrage", Boolean(titreAccueil), titreAccueil);
+  verifier('les quatre chiffres sont là',
+    (await bibliotheque.locator('.chiffre').count()) === 4);
 
   // La pastille doit finir par annoncer « en ligne » : la sonde réseau répond
   // en quelques secondes.
   await bibliotheque.waitForTimeout(4000);
-  const pastille = await bibliotheque.locator('.pastille').getAttribute('data-etat');
-  verifier('sonde réseau aboutie', pastille === 'en-ligne', `état = ${pastille}`);
+  const etats = await bibliotheque.locator('.rail-jeu').evaluateAll(
+    (n) => n.map((e) => e.dataset.etat));
+  verifier('sonde réseau aboutie',
+    etats.filter((e) => e === 'en-ligne').length === 3, etats.join(', '));
 
   await bibliotheque.screenshot({ path: path.join(CAPTURES, '01-bibliotheque.png') });
 
@@ -81,6 +85,15 @@ function verifier(intitule, condition, detail = '') {
   verifier('Equipia n\'est pas lançable',
     await bibliotheque.locator('.jouer').isDisabled());
   await bibliotheque.screenshot({ path: path.join(CAPTURES, '03-equipia.png') });
+
+  // --- retour à l'accueil ---
+  await bibliotheque.locator('#accueil').click();
+  await bibliotheque.waitForTimeout(700);
+  verifier("le bouton Accueil ramène à la page d'accueil",
+    (await bibliotheque.locator('.acc-tete').count()) === 1);
+  const articles = await bibliotheque.locator('.nouvelle').count();
+  verifier('les nouvelles du studio sont chargées', articles > 0, `${articles} articles`);
+  await bibliotheque.screenshot({ path: path.join(CAPTURES, '07-accueil.png') });
 
   // --- bascule de langue ---
   console.log('\n--- langue ---');

@@ -13,12 +13,14 @@ const { app, BrowserWindow, shell, ipcMain, Menu, Tray, nativeImage, net, dialog
 const path = require('node:path');
 const fs = require('node:fs');
 const donnees = require('./donnees');
+const maj = require('./maj');
 
 const RACINE = path.join(__dirname, '..');
 const SITE = 'https://ludopia.fr';
 // Servi depuis `assets/` et non `/lanceur/` : le dossier `lanceur/` du dépôt
 // contient les sources de cette application, il n'est jamais mis en ligne.
 const CATALOGUE_DISTANT = `${SITE}/assets/catalogue-jeux.json`;
+const ACTUALITES = `${SITE}/assets/actualites.json`;
 
 /** Une seule instance : un second lancement réveille la fenêtre existante. */
 if (!app.requestSingleInstanceLock()) {
@@ -44,25 +46,36 @@ function catalogueLocal() {
  * les nouveautés sans réinstallation. En cas d'échec — hors ligne, site en
  * maintenance, JSON abîmé — on garde celui livré avec l'application.
  */
-function catalogueDistant() {
+function jsonDistant(url, delai = 6000) {
   return new Promise((resolve) => {
-    const fin = setTimeout(() => resolve(null), 6000);
-    const requete = net.request({ url: CATALOGUE_DISTANT, useSessionCookies: false });
+    const fin = setTimeout(() => resolve(null), delai);
+    const requete = net.request({ url, useSessionCookies: false });
     let corps = '';
     requete.on('response', (rep) => {
       if (rep.statusCode !== 200) { clearTimeout(fin); resolve(null); return; }
       rep.on('data', (m) => { corps += m; });
       rep.on('end', () => {
         clearTimeout(fin);
-        try {
-          const recu = JSON.parse(corps);
-          resolve(Array.isArray(recu.jeux) && recu.jeux.length ? recu : null);
-        } catch { resolve(null); }
+        try { resolve(JSON.parse(corps)); } catch { resolve(null); }
       });
     });
     requete.on('error', () => { clearTimeout(fin); resolve(null); });
     requete.end();
   });
+}
+
+async function catalogueDistant() {
+  const recu = await jsonDistant(CATALOGUE_DISTANT);
+  return Array.isArray(recu?.jeux) && recu.jeux.length ? recu : null;
+}
+
+/** Les actualités du studio, telles que publiées sur le site. */
+let actualites = null;
+async function chargerActualites() {
+  if (actualites) return actualites;
+  const recu = await jsonDistant(ACTUALITES);
+  if (recu?.langues) actualites = recu;
+  return actualites;
 }
 
 /**
@@ -391,6 +404,9 @@ function creerMenu() {
     {
       label: 'Aide',
       submenu: [
+        { label: 'Rechercher une mise à jour…',
+          click: () => maj.chercher(true, fenetreBibliotheque) },
+        { type: 'separator' },
         { label: 'Site de Ludopia', click: () => ouvrirDehors(SITE) },
         { label: 'Nous écrire', click: () => ouvrirDehors(`${SITE}/contact.html`) },
         { type: 'separator' },
@@ -456,6 +472,11 @@ function brancherIpc() {
 
   ipcMain.handle('lien:ouvrir', (_evt, url) => { ouvrirDehors(url); });
 
+  ipcMain.handle('actualites:lire', () => chargerActualites());
+
+  ipcMain.handle('maj:etat', () => ({ ...maj.etat(), disponible: maj.disponible() }));
+  ipcMain.handle('maj:chercher', () => maj.chercher(true, fenetreBibliotheque));
+
   ipcMain.handle('catalogue:rafraichir', async () => {
     catalogue = fusionner(catalogueLocal(), await catalogueDistant());
     return catalogue;
@@ -473,9 +494,17 @@ app.whenReady().then(async () => {
 
   catalogue = catalogueLocal();
   brancherIpc();
+
+  maj.brancher();
+  maj.surChangement((etat) => {
+    if (fenetreBibliotheque && !fenetreBibliotheque.isDestroyed()) {
+      fenetreBibliotheque.webContents.send('maj:changement', etat);
+    }
+  });
   creerMenu();
   creerBibliotheque();
   creerPlateau();
+  maj.surveiller();
 
   // Le catalogue distant arrive après coup : la bibliothèque s'affiche tout de
   // suite avec ce qui est livré, puis se met à jour si le réseau répond.
