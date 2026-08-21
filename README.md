@@ -76,6 +76,24 @@ ressources/           icônes et droits macOS
 outils/               icônes, vérification, publication
 ```
 
+### Les amis et la messagerie
+
+`src/social.js` relie le lanceur au service social — voir `serveur/README.md`.
+
+Tout passe par le processus principal : l'interface n'a ni le jeton de session,
+ni l'adresse du service. Elle demande « la liste des amis » et reçoit la liste.
+Un défaut d'affichage ne peut donc pas faire fuiter la session, et la fenêtre
+garde sa politique `connect-src 'none'`.
+
+Le jeton est chiffré par le système quand celui-ci le propose (`safeStorage` :
+DPAPI sur Windows, trousseau sur macOS). Sans cela il resterait lisible en clair
+dans le dossier utilisateur.
+
+On interroge le service toutes les cinq secondes quand une conversation est
+ouverte, plus lentement sinon. Une connexion permanente exigerait des Durable
+Objects, donc un plan payant, pour un gain imperceptible sur une conversation à
+deux.
+
 ### Le catalogue
 
 `catalogue.json` est livré avec l'application **et** publié sur
@@ -104,8 +122,17 @@ s'affiche donc sans visuel plutôt qu'avec une image cassée.
 ### Ce qui est écrit sur le disque
 
 Dans `donnees.json`, au sein du dossier utilisateur d'Electron : temps de jeu,
-nombre de lancements, date de dernière partie, position des fenêtres et langue
-choisie. Rien n'est envoyé à Ludopia.
+nombre de lancements, date de dernière partie, position des fenêtres, langue
+choisie, et la session sociale (chiffrée).
+
+**Une mise à jour ne remet jamais ces compteurs à zéro.** Les données vivent
+dans `%APPDATA%\Ludopia` alors que le programme s'installe dans
+`%LOCALAPPDATA%\Programs\Ludopia` : l'installateur ne touche pas le premier
+dossier. C'est structurel, pas un réglage.
+
+Le temps de jeu ne quitte pas la machine. Ce qui part au service, une fois
+connecté, se limite au pseudo, au code ami, aux messages, et au jeu ouvert —
+pour que les amis le voient.
 
 ## Signature
 

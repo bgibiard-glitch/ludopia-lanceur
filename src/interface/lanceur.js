@@ -110,6 +110,7 @@ const TEXTES = {
       reseau: 'Pas de réseau.',
       delai_depasse: 'Le service met trop de temps à répondre.',
       non_authentifie: 'Votre session a expiré. Reconnectez-vous.',
+      trop_d_appels: 'Trop d’essais. Patientez quelques minutes.',
     },
   },
   en: {
@@ -214,6 +215,7 @@ const TEXTES = {
       reseau: 'No network.',
       delai_depasse: 'The service is taking too long.',
       non_authentifie: 'Your session expired. Sign in again.',
+      trop_d_appels: 'Too many attempts. Wait a few minutes.',
     },
   },
 };
