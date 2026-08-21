@@ -1,0 +1,112 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 500" role="img" aria-label="Illustration World Blocks : une grille de blocs et un monument en construction">
+  <defs>
+    <linearGradient id="wSky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#13244e"/>
+      <stop offset=".55" stop-color="#0b1330"/>
+      <stop offset="1" stop-color="#06060f"/>
+    </linearGradient>
+    <radialGradient id="wGlow" cx=".5" cy=".5" r=".5">
+      <stop offset="0" stop-color="#4d8dff" stop-opacity=".45"/>
+      <stop offset="1" stop-color="#4d8dff" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="wTour" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffd6a8"/>
+      <stop offset="1" stop-color="#ef7f42"/>
+    </linearGradient>
+    <style>
+      /* Une animation CSS remplace l'attribut transform du SVG : chaque element anime
+         est donc un groupe INTERNE, le groupe externe portant seul le positionnement. */
+      .tombe{animation:chute 3.4s cubic-bezier(.34,1.4,.64,1) infinite}
+      @keyframes chute{0%{transform:translateY(-150px);opacity:0}
+        26%{transform:translateY(0);opacity:1}100%{transform:translateY(0);opacity:1}}
+      .ligne{opacity:0;animation:eclat 3.4s ease-in-out infinite}
+      @keyframes eclat{0%,30%{opacity:0}42%{opacity:.85}62%,100%{opacity:0}}
+      .monte{animation:mt 5.4s ease-in-out infinite alternate}
+      @keyframes mt{from{transform:translateY(4px)}to{transform:translateY(-8px)}}
+      .scint{animation:sc 2.6s ease-in-out infinite alternate}
+      @keyframes sc{from{opacity:.25}to{opacity:1}}
+      @media (prefers-reduced-motion:reduce){
+        .tombe,.monte,.scint{animation:none}
+        .ligne{animation:none;opacity:.5}
+      }
+    </style>
+  </defs>
+
+  <rect width="800" height="500" fill="url(#wSky)"/>
+  <circle cx="270" cy="250" r="240" fill="url(#wGlow)"/>
+
+  <!-- ================= la grille ================= -->
+  <g transform="translate(56 58)">
+    <rect x="-16" y="-16" width="386" height="386" rx="26" fill="#101c3c"
+          stroke="#4d8dff" stroke-opacity=".3" stroke-width="2"/>
+
+    <!-- cases vides -->
+    <g fill="#16264f">
+      <rect x="0" y="0" width="66" height="66" rx="12"/><rect x="72" y="0" width="66" height="66" rx="12"/><rect x="144" y="0" width="66" height="66" rx="12"/><rect x="216" y="0" width="66" height="66" rx="12"/><rect x="288" y="0" width="66" height="66" rx="12"/>
+      <rect x="0" y="72" width="66" height="66" rx="12"/><rect x="72" y="72" width="66" height="66" rx="12"/><rect x="144" y="72" width="66" height="66" rx="12"/><rect x="216" y="72" width="66" height="66" rx="12"/><rect x="288" y="72" width="66" height="66" rx="12"/>
+      <rect x="0" y="144" width="66" height="66" rx="12"/><rect x="72" y="144" width="66" height="66" rx="12"/><rect x="144" y="144" width="66" height="66" rx="12"/><rect x="216" y="144" width="66" height="66" rx="12"/><rect x="288" y="144" width="66" height="66" rx="12"/>
+      <rect x="0" y="216" width="66" height="66" rx="12"/><rect x="72" y="216" width="66" height="66" rx="12"/><rect x="144" y="216" width="66" height="66" rx="12"/><rect x="216" y="216" width="66" height="66" rx="12"/><rect x="288" y="216" width="66" height="66" rx="12"/>
+      <rect x="0" y="288" width="66" height="66" rx="12"/><rect x="72" y="288" width="66" height="66" rx="12"/><rect x="144" y="288" width="66" height="66" rx="12"/><rect x="216" y="288" width="66" height="66" rx="12"/><rect x="288" y="288" width="66" height="66" rx="12"/>
+    </g>
+
+    <!-- blocs deja poses : il manque une case a la derniere ligne -->
+    <g>
+      <rect x="0" y="288" width="66" height="66" rx="12" fill="#4d8dff"/>
+      <rect x="72" y="288" width="66" height="66" rx="12" fill="#ef7f42"/>
+      <rect x="144" y="288" width="66" height="66" rx="12" fill="#4fd1c5"/>
+      <rect x="288" y="288" width="66" height="66" rx="12" fill="#a78bfa"/>
+      <rect x="0" y="216" width="66" height="66" rx="12" fill="#4fd1c5"/>
+      <rect x="288" y="216" width="66" height="66" rx="12" fill="#ef7f42"/>
+    </g>
+
+    <!-- la piece qui vient completer la ligne -->
+    <g class="tombe">
+      <rect x="216" y="288" width="66" height="66" rx="12" fill="#ffd166"/>
+    </g>
+
+    <!-- l eclat de la ligne complete -->
+    <g class="ligne">
+      <rect x="-8" y="280" width="370" height="82" rx="18" fill="#fff"/>
+    </g>
+
+    <!-- les quatre pieces disponibles -->
+    <g transform="translate(4 386)">
+      <g fill="#4d8dff"><rect x="0" y="0" width="28" height="28" rx="7"/><rect x="32" y="0" width="28" height="28" rx="7"/></g>
+      <g fill="#ef7f42"><rect x="110" y="0" width="28" height="28" rx="7"/><rect x="110" y="-32" width="28" height="28" rx="7"/></g>
+      <g fill="#4fd1c5"><rect x="200" y="0" width="28" height="28" rx="7"/><rect x="232" y="0" width="28" height="28" rx="7"/><rect x="232" y="-32" width="28" height="28" rx="7"/></g>
+      <g fill="#a78bfa"><rect x="316" y="0" width="28" height="28" rx="7"/></g>
+    </g>
+  </g>
+
+  <!-- ================= le monument ================= -->
+  <g transform="translate(590 118)">
+    <g class="monte">
+      <path d="M64 0 L84 190 L120 268 L8 268 L44 190 Z" fill="url(#wTour)"/>
+      <g stroke="#0b1330" stroke-opacity=".4" stroke-width="4" fill="none">
+        <path d="M50 104 H78M42 172 H86M24 232 H104"/>
+      </g>
+      <path d="M4 268 H124" stroke="#ffd6a8" stroke-width="6" stroke-linecap="round"/>
+      <!-- ce qui reste a batir -->
+      <g stroke="#4d8dff" stroke-opacity=".6" stroke-width="3" stroke-dasharray="8 8" fill="none">
+        <path d="M30 268 V300 H98 V268"/>
+        <path d="M64 0 V-34"/>
+      </g>
+      <circle cx="64" cy="-42" r="7" fill="#ffd166" class="scint"/>
+    </g>
+  </g>
+
+  <!-- progression de la ville -->
+  <g transform="translate(566 452)">
+    <rect x="0" y="0" width="180" height="10" rx="5" fill="#16264f"/>
+    <rect x="0" y="0" width="76" height="10" rx="5" fill="#ef7f42"/>
+    <circle cx="76" cy="5" r="8" fill="#ffd6a8"/>
+  </g>
+
+  <!-- etincelles -->
+  <g fill="#9dc3ff">
+    <circle class="scint" cx="512" cy="86" r="3"/>
+    <circle class="scint" cx="762" cy="176" r="2.5" style="animation-delay:.7s"/>
+    <circle class="scint" cx="524" cy="392" r="2.5" style="animation-delay:1.3s"/>
+    <circle class="scint" cx="756" cy="336" r="3" style="animation-delay:1.9s"/>
+  </g>
+</svg>

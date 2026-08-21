@@ -1,0 +1,110 @@
+{
+  "version": 1,
+  "revision": "2026-08-21",
+  "jeux": [
+    {
+      "id": "worldblocks",
+      "nom": "World Blocks",
+      "url": "https://worldblocks.app",
+      "origines": ["https://worldblocks.app"],
+      "accent": "#4d8dff",
+      "encre": "#05122e",
+      "logo": "medias/worldblocks.svg",
+      "jaquette": "medias/captures/worldblocks-jeu.webp",
+      "vignette": "medias/captures/worldblocks-accueil.webp",
+      "statut": "en-ligne",
+      "portrait": true,
+      "fenetre": { "largeur": 520, "hauteur": 940 },
+      "fr": {
+        "accroche": "Un puzzle de blocs qui bâtit une vraie ville.",
+        "resume": "Complétez des lignes, gagnez des City Coins et faites sortir la Tour Eiffel de terre en onze étapes. Aucun compte, on appuie sur Jouer et on joue.",
+        "genres": ["Puzzle", "Occasionnel", "Progression"],
+        "public": "Tout public"
+      },
+      "en": {
+        "accroche": "A block puzzle that builds a real city.",
+        "resume": "Complete lines, earn City Coins and raise the Eiffel Tower in eleven steps. No account — press Play and play.",
+        "genres": ["Puzzle", "Casual", "Progression"],
+        "public": "Everyone"
+      }
+    },
+    {
+      "id": "villopia",
+      "nom": "Villopia",
+      "url": "https://villopia.app",
+      "origines": ["https://villopia.app"],
+      "accent": "#2ee6a8",
+      "encre": "#04231a",
+      "logo": "medias/villopia.svg",
+      "jaquette": "medias/captures/villopia-01-ville.webp",
+      "vignette": "medias/captures/villopia-02-construire.webp",
+      "statut": "en-ligne",
+      "portrait": false,
+      "fenetre": { "largeur": 1400, "hauteur": 880 },
+      "fr": {
+        "accroche": "Un idle/tycoon isométrique où tout se voit.",
+        "resume": "Tout ce que vous achetez apparaît sur votre ville. Votre ville a une URL publique, et chaque visite la fait produire davantage.",
+        "genres": ["Idle", "Tycoon", "Gestion", "Simulation"],
+        "public": "Tout public"
+      },
+      "en": {
+        "accroche": "An isometric idle/tycoon where everything shows.",
+        "resume": "Everything you buy shows up on your city. Your city has a public URL, and every visit makes it produce more.",
+        "genres": ["Idle", "Tycoon", "Management", "Simulation"],
+        "public": "Everyone"
+      }
+    },
+    {
+      "id": "tradopia",
+      "nom": "Tradopia",
+      "url": "https://tradopia.app",
+      "origines": ["https://tradopia.app"],
+      "accent": "#ffb020",
+      "encre": "#2b1a00",
+      "logo": "medias/tradopia.svg",
+      "jaquette": "medias/captures/tradopia-marche.webp",
+      "vignette": "medias/captures/tradopia-fiche.webp",
+      "statut": "en-ligne",
+      "portrait": true,
+      "fenetre": { "largeur": 520, "hauteur": 940 },
+      "fr": {
+        "accroche": "La bourse, en multijoueur, dès 8 ans.",
+        "resume": "Investissez des Zellions dans des entreprises imaginaires dont les cours suivent l'offre et la demande réelles des autres joueurs.",
+        "genres": ["Simulation", "Éducatif", "Multijoueur", "Stratégie"],
+        "public": "Dès 8 ans"
+      },
+      "en": {
+        "accroche": "The stock market, multiplayer, from age 8.",
+        "resume": "Invest Zellions in imaginary companies whose prices follow the real supply and demand of the other players.",
+        "genres": ["Simulation", "Educational", "Multiplayer", "Strategy"],
+        "public": "Ages 8+"
+      }
+    },
+    {
+      "id": "equipia",
+      "nom": "Equipia",
+      "url": null,
+      "origines": [],
+      "accent": "#ff7a45",
+      "encre": "#2b1005",
+      "logo": "medias/equipia.svg",
+      "jaquette": null,
+      "vignette": null,
+      "statut": "a-venir",
+      "portrait": false,
+      "fenetre": { "largeur": 1400, "hauteur": 880 },
+      "fr": {
+        "accroche": "Simulation et gestion équestre.",
+        "resume": "Le prochain monde Ludopia. Élevage, entraînement, concours — encore en atelier. Il apparaîtra ici tout seul le jour de l'ouverture.",
+        "genres": ["Simulation", "Gestion"],
+        "public": "Tout public"
+      },
+      "en": {
+        "accroche": "Horse simulation and management.",
+        "resume": "The next Ludopia world. Breeding, training, competitions — still on the workbench. It will show up here on its own on opening day.",
+        "genres": ["Simulation", "Management"],
+        "public": "Everyone"
+      }
+    }
+  ]
+}

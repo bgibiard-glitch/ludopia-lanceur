@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Droits demandés à macOS sous « hardened runtime ».
+
+  Electron a besoin de JIT et de mémoire exécutable non signée pour V8 : sans
+  ces deux droits, l'application signée refuse de démarrer.
+  Le réseau sortant sert à joindre les jeux et le catalogue.
+  Aucun droit n'est demandé pour le micro, la caméra, la position ou les
+  fichiers de l'utilisateur : le lanceur n'y touche pas.
+-->
+<plist version="1.0">
+  <dict>
+    <key>com.apple.security.cs.allow-jit</key>
+    <true/>
+    <key>com.apple.security.cs.allow-unsigned-executable-memory</key>
+    <true/>
+    <key>com.apple.security.cs.disable-library-validation</key>
+    <true/>
+    <key>com.apple.security.network.client</key>
+    <true/>
+  </dict>
+</plist>

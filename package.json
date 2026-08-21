@@ -1,0 +1,77 @@
+{
+  "name": "ludopia-lanceur",
+  "productName": "Ludopia",
+  "version": "1.0.0",
+  "description": "Le lanceur Ludopia : la bibliothèque des jeux du studio, en application de bureau.",
+  "author": {
+    "name": "Ludopia",
+    "email": "contact@ludopia.fr"
+  },
+  "homepage": "https://ludopia.fr",
+  "license": "UNLICENSED",
+  "private": true,
+  "main": "src/principal.js",
+  "scripts": {
+    "start": "electron .",
+    "icones": "python outils/icones.py",
+    "empaqueter": "electron-builder --dir",
+    "windows": "electron-builder --win",
+    "macos": "electron-builder --mac",
+    "linux": "electron-builder --linux"
+  },
+  "devDependencies": {
+    "electron": "^43.4.1",
+    "electron-builder": "^26.15.3"
+  },
+  "build": {
+    "appId": "fr.ludopia.lanceur",
+    "productName": "Ludopia",
+    "copyright": "© 2026 Ludopia",
+    "directories": {
+      "output": "dist",
+      "buildResources": "ressources"
+    },
+    "files": [
+      "src/**/*",
+      "catalogue.json",
+      "!**/*.map"
+    ],
+    "win": {
+      "target": [
+        { "target": "nsis", "arch": ["x64", "arm64"] }
+      ],
+      "icon": "ressources/icon.ico"
+    },
+    "compression": "maximum",
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Ludopia",
+      "artifactName": "Ludopia-${version}-${arch}-installateur.${ext}",
+      "differentialPackage": false
+    },
+    "mac": {
+      "target": [
+        { "target": "dmg", "arch": ["x64", "arm64"] }
+      ],
+      "icon": "ressources/icon.icns",
+      "category": "public.app-category.games",
+      "darkModeSupport": true,
+      "hardenedRuntime": true,
+      "entitlements": "ressources/entitlements.mac.plist",
+      "entitlementsInherit": "ressources/entitlements.mac.plist"
+    },
+    "dmg": {
+      "title": "Ludopia"
+    },
+    "linux": {
+      "target": ["AppImage", "deb"],
+      "icon": "ressources/icones",
+      "category": "Game",
+      "maintainer": "Ludopia <contact@ludopia.fr>"
+    }
+  }
+}

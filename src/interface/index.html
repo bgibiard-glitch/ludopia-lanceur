@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'none'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; font-src 'self'; script-src 'self'; connect-src 'none'"
+    />
+    <title>Ludopia</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <!-- Zone de saisie de la fenêtre : la barre native est masquée, il faut
+         une bande déplaçable sinon la fenêtre ne bouge plus. -->
+    <div class="barre" role="presentation">
+      <div class="barre-marque">
+        <img src="medias/logo.svg" alt="" width="24" height="24" />
+        <span>Ludopia</span>
+      </div>
+      <div class="barre-outils">
+        <button class="lien-langue" data-langue type="button">EN</button>
+      </div>
+    </div>
+
+    <div class="cadre">
+      <nav class="rail" aria-label="Bibliothèque">
+        <p class="rail-titre" data-t="bibliotheque">Bibliothèque</p>
+        <ul class="rail-liste" id="rail"></ul>
+        <div class="rail-pied">
+          <button class="rail-lien" type="button" data-ouvrir="https://ludopia.fr" data-t="siteWeb">
+            Site de Ludopia
+          </button>
+          <p class="rail-version" id="version"></p>
+        </div>
+      </nav>
+
+      <main class="scene" id="scene" aria-live="polite">
+        <div class="vide" id="vide">
+          <img src="medias/logo.svg" alt="" width="64" height="64" />
+          <p data-t="chargement">Chargement de la bibliothèque…</p>
+        </div>
+      </main>
+    </div>
+
+    <script src="lanceur.js"></script>
+  </body>
+</html>

@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Logo Ludopia">
+  <defs>
+    <linearGradient id="lg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#7c5cff"/>
+      <stop offset=".55" stop-color="#22d3ee"/>
+      <stop offset="1" stop-color="#ff5c9d"/>
+    </linearGradient>
+    <radialGradient id="core" cx=".5" cy=".42" r=".6">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#c7c2ff"/>
+    </radialGradient>
+  </defs>
+
+  <!-- gemme centrale -->
+  <g transform="rotate(45 32 32)">
+    <rect x="12" y="12" width="40" height="40" rx="13" fill="url(#lg)"/>
+    <rect x="12" y="12" width="40" height="40" rx="13" fill="none" stroke="#ffffff" stroke-opacity=".35" stroke-width="1.5"/>
+  </g>
+
+  <!-- coeur lumineux -->
+  <circle cx="32" cy="32" r="7.5" fill="url(#core)"/>
+
+  <!-- satellites : les mondes -opia -->
+  <g fill="none" stroke="#ffffff" stroke-opacity=".28" stroke-width="1">
+    <circle cx="32" cy="32" r="27"/>
+  </g>
+  <g>
+    <animateTransform attributeName="transform" type="rotate" from="0 32 32" to="360 32 32" dur="9s" repeatCount="indefinite"/>
+    <circle cx="59" cy="32" r="3" fill="#ffb020"/>
+  </g>
+  <g>
+    <animateTransform attributeName="transform" type="rotate" from="120 32 32" to="480 32 32" dur="9s" repeatCount="indefinite"/>
+    <circle cx="59" cy="32" r="3" fill="#2ee6a8"/>
+  </g>
+  <g>
+    <animateTransform attributeName="transform" type="rotate" from="240 32 32" to="600 32 32" dur="9s" repeatCount="indefinite"/>
+    <circle cx="59" cy="32" r="3" fill="#ff7a45"/>
+  </g>
+</svg>

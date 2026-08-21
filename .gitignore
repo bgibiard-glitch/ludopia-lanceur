@@ -1,0 +1,25 @@
+# Dépendances — réinstallables par `npm install`
+node_modules/
+
+# Sorties de compilation : les installateurs vivent dans les releases GitHub,
+# pas dans l'historique. Un dépôt qui garde ses binaires devient illisible.
+dist/
+
+# Sorties de vérification : captures d'écran et profil jetable du script
+# outils/verifier.js
+outils/captures/
+
+# Icônes dérivées — refabriquées par outils/icone-source.js puis outils/icones.py
+# à partir du favicon du site. On garde icon.ico et icon.png, dont electron-builder
+# a besoin, mais pas le rendu intermédiaire.
+ressources/icon-1024.png
+
+# Système
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Éditeurs
+.vscode/
+.idea/
+*.swp

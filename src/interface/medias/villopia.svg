@@ -1,0 +1,132 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 500" role="img" aria-label="Illustration Villopia : ville isométrique en construction">
+  <defs>
+    <linearGradient id="vSky" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0b2030"/>
+      <stop offset="1" stop-color="#07060f"/>
+    </linearGradient>
+    <linearGradient id="vGround" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#123a3a"/>
+      <stop offset="1" stop-color="#0a1c28"/>
+    </linearGradient>
+    <radialGradient id="vGlow" cx=".5" cy=".5" r=".5">
+      <stop offset="0" stop-color="#2ee6a8" stop-opacity=".5"/>
+      <stop offset="1" stop-color="#2ee6a8" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="vGem" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#9df7ff"/>
+      <stop offset="1" stop-color="#22d3ee"/>
+    </linearGradient>
+    <style>
+      .rise{transform-origin:400px 460px;animation:rise 3.4s cubic-bezier(.22,1,.36,1) infinite alternate}
+      @keyframes rise{from{transform:translateY(6px)}to{transform:translateY(-6px)}}
+      .float{animation:bob 4.6s ease-in-out infinite alternate}
+      @keyframes bob{from{transform:translateY(0)}to{transform:translateY(-18px)}}
+      .win{animation:blink 3s steps(1) infinite}
+      @keyframes blink{0%,60%{opacity:1}61%,100%{opacity:.25}}
+      .pulse{animation:pl 2.8s ease-in-out infinite}
+      @keyframes pl{0%,100%{opacity:.15;transform:scale(.9)}50%{opacity:.5;transform:scale(1.08)}}
+      @media (prefers-reduced-motion:reduce){.rise,.float,.win,.pulse{animation:none}}
+    </style>
+  </defs>
+
+  <rect width="800" height="500" fill="url(#vSky)"/>
+  <circle cx="400" cy="306" r="230" fill="url(#vGlow)" class="pulse" style="transform-origin:400px 306px"/>
+
+  <!-- sol isométrique -->
+  <path d="M400 166 L680 306 L400 446 L120 306 Z" fill="url(#vGround)" stroke="#2ee6a8" stroke-opacity=".28" stroke-width="2"/>
+  <g stroke="#2ee6a8" stroke-opacity=".12" fill="none">
+    <path d="M260 236 L540 376M330 201 L610 341M190 271 L470 411"/>
+    <path d="M540 236 L260 376M610 271 L330 411M470 201 L190 341"/>
+  </g>
+
+  <!-- route -->
+  <path d="M400 250 L512 306 L400 362 L288 306 Z" fill="#0e1626" stroke="#22d3ee" stroke-opacity=".22"/>
+  <path d="M344 278 L456 334" stroke="#ffb020" stroke-opacity=".55" stroke-width="3" stroke-dasharray="10 12"/>
+
+  <!-- ================= bâtiments (arrière vers avant) ================= -->
+
+  <!-- tour centrale -->
+  <g class="rise">
+    <path d="M344 130 L400 158 L456 130 L400 102 Z" fill="#2ee6a8"/>
+    <path d="M344 130 L400 158 L400 278 L344 250 Z" fill="#16324a"/>
+    <path d="M456 130 L400 158 L400 278 L456 250 Z" fill="#0f2338"/>
+    <g fill="#ffe9a8" class="win">
+      <rect x="360" y="176" width="12" height="16" rx="2"/>
+      <rect x="360" y="208" width="12" height="16" rx="2"/>
+      <rect x="422" y="166" width="12" height="16" rx="2"/>
+      <rect x="422" y="198" width="12" height="16" rx="2"/>
+    </g>
+  </g>
+
+  <!-- gauche -->
+  <g class="rise" style="animation-delay:.5s">
+    <path d="M288 198 L344 226 L400 198 L344 170 Z" fill="#22d3ee"/>
+    <path d="M288 198 L344 226 L344 306 L288 278 Z" fill="#132b46"/>
+    <path d="M400 198 L344 226 L344 306 L400 278 Z" fill="#0d1f33"/>
+    <g fill="#ffe9a8" class="win" style="animation-delay:.9s">
+      <rect x="304" y="240" width="11" height="15" rx="2"/>
+      <rect x="366" y="232" width="11" height="15" rx="2"/>
+    </g>
+  </g>
+
+  <!-- droite -->
+  <g class="rise" style="animation-delay:.9s">
+    <path d="M400 226 L456 254 L512 226 L456 198 Z" fill="#ffb020"/>
+    <path d="M400 226 L456 254 L456 306 L400 278 Z" fill="#2a2440"/>
+    <path d="M512 226 L456 254 L456 306 L512 278 Z" fill="#1c1830"/>
+    <g fill="#ffe9a8" class="win" style="animation-delay:.4s">
+      <rect x="418" y="268" width="11" height="14" rx="2"/>
+      <rect x="478" y="264" width="11" height="14" rx="2"/>
+    </g>
+  </g>
+
+  <!-- avant gauche -->
+  <g class="rise" style="animation-delay:1.3s">
+    <path d="M232 278 L288 306 L344 278 L288 250 Z" fill="#2ee6a8"/>
+    <path d="M232 278 L288 306 L288 356 L232 328 Z" fill="#16324a"/>
+    <path d="M344 278 L288 306 L288 356 L344 328 Z" fill="#0f2338"/>
+  </g>
+
+  <!-- avant droite -->
+  <g class="rise" style="animation-delay:1.7s">
+    <path d="M456 306 L512 334 L568 306 L512 278 Z" fill="#22d3ee"/>
+    <path d="M456 306 L512 334 L512 396 L456 368 Z" fill="#132b46"/>
+    <path d="M568 306 L512 334 L512 396 L568 368 Z" fill="#0d1f33"/>
+    <g fill="#ffe9a8" class="win" style="animation-delay:1.4s">
+      <rect x="472" y="348" width="11" height="14" rx="2"/>
+      <rect x="532" y="344" width="11" height="14" rx="2"/>
+    </g>
+  </g>
+
+  <!-- petite maison avant -->
+  <g class="rise" style="animation-delay:2.1s">
+    <path d="M344 334 L400 362 L456 334 L400 306 Z" fill="#ff7a45"/>
+    <path d="M344 334 L400 362 L400 394 L344 366 Z" fill="#2a2440"/>
+    <path d="M456 334 L400 362 L400 394 L456 366 Z" fill="#1c1830"/>
+  </g>
+
+  <!-- gemme flottante -->
+  <g class="float">
+    <path d="M640 120 L672 152 L640 200 L608 152 Z" fill="url(#vGem)"/>
+    <path d="M608 152 L640 138 L672 152 L640 200 Z" fill="#fff" fill-opacity=".22"/>
+    <circle cx="640" cy="158" r="52" fill="url(#vGlow)"/>
+  </g>
+
+  <!-- pièces qui montent -->
+  <g class="float" style="animation-delay:1.2s">
+    <circle cx="180" cy="150" r="20" fill="#ffb020"/>
+    <circle cx="180" cy="150" r="20" fill="none" stroke="#fff" stroke-opacity=".5" stroke-width="2"/>
+    <circle cx="180" cy="150" r="9" fill="#f59b06"/>
+  </g>
+  <g class="float" style="animation-delay:2.2s">
+    <circle cx="234" cy="98" r="13" fill="#ffd166"/>
+    <circle cx="234" cy="98" r="13" fill="none" stroke="#fff" stroke-opacity=".45" stroke-width="2"/>
+  </g>
+
+  <!-- visiteurs (petites étincelles) -->
+  <g fill="#2ee6a8">
+    <circle class="pulse" cx="700" cy="400" r="4"/>
+    <circle class="pulse" cx="120" cy="410" r="4" style="animation-delay:.8s"/>
+    <circle class="pulse" cx="90" cy="200" r="3" style="animation-delay:1.5s"/>
+  </g>
+</svg>
