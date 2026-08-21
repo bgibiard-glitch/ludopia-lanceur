@@ -14,6 +14,7 @@ const path = require('node:path');
 const fs = require('node:fs');
 const donnees = require('./donnees');
 const maj = require('./maj');
+const social = require('./social');
 
 const RACINE = path.join(__dirname, '..');
 const SITE = 'https://ludopia.fr';
@@ -72,6 +73,14 @@ async function catalogueDistant() {
 /** Les actualités du studio, telles que publiées sur le site. */
 let actualites = null;
 async function chargerActualites() {
+  // Le service lit les changelogs des jeux a la source : une version deployee
+  // il y a deux minutes y figure deja. Le fichier depose avec le site sert de
+  // repli quand un jeu ne publie pas encore le sien.
+  const vif = await social.actualites();
+  if (vif.ok && vif.donnees?.langues) {
+    actualites = vif.donnees;
+    return actualites;
+  }
   if (actualites) return actualites;
   const recu = await jsonDistant(ACTUALITES);
   if (recu?.langues) actualites = recu;
@@ -234,6 +243,7 @@ function lancerJeu(id) {
 
   fenetresJeu.set(id, fenetre);
   chronos.set(id, Date.now());
+  social.signalerJeu(id);
   donnees.majStatsJeu(id, {
     lancements: stats.lancements + 1,
     derniereFois: new Date().toISOString(),
@@ -251,6 +261,8 @@ function lancerJeu(id) {
   fenetre.on('closed', () => {
     compterTemps(id);
     fenetresJeu.delete(id);
+    // On annonce le jeu encore ouvert, s'il en reste un.
+    social.signalerJeu([...fenetresJeu.keys()][0] || null);
     prevenirBibliotheque();
   });
 
@@ -474,6 +486,25 @@ function brancherIpc() {
 
   ipcMain.handle('actualites:lire', () => chargerActualites());
 
+  // --- service social ---
+  ipcMain.handle('social:etat', () => social.etat());
+  ipcMain.handle('social:inscription', (_e, pseudo, mdp) =>
+    social.inscription(pseudo, mdp, `${process.platform} ${require('node:os').hostname()}`));
+  ipcMain.handle('social:connexion', (_e, pseudo, mdp) =>
+    social.connexion(pseudo, mdp, `${process.platform} ${require('node:os').hostname()}`));
+  ipcMain.handle('social:deconnexion', () => social.deconnexion());
+
+  ipcMain.handle('social:amis', () => social.amis());
+  ipcMain.handle('social:ajouterAmi', (_e, code) => social.ajouterAmi(code));
+  ipcMain.handle('social:repondreAmi', (_e, id, accepte) => social.repondreAmi(id, accepte));
+  ipcMain.handle('social:retirerAmi', (_e, id) => social.retirerAmi(id));
+  ipcMain.handle('social:bloquer', (_e, id, actif) => social.bloquer(id, actif));
+  ipcMain.handle('social:signaler', (_e, id, motif) => social.signaler(id, motif));
+
+  ipcMain.handle('social:messages', (_e, avec, depuis) => social.messages(avec, depuis));
+  ipcMain.handle('social:envoyer', (_e, vers, texte) => social.envoyer(vers, texte));
+  ipcMain.handle('social:marquerLus', (_e, avec) => social.marquerLus(avec));
+
   ipcMain.handle('maj:etat', () => ({ ...maj.etat(), disponible: maj.disponible() }));
   ipcMain.handle('maj:chercher', () => maj.chercher(true, fenetreBibliotheque));
 
@@ -494,6 +525,13 @@ app.whenReady().then(async () => {
 
   catalogue = catalogueLocal();
   brancherIpc();
+
+  social.surChangement(() => {
+    if (fenetreBibliotheque && !fenetreBibliotheque.isDestroyed()) {
+      fenetreBibliotheque.webContents.send('social:changement', social.etat());
+    }
+  });
+  social.reprendre();
 
   maj.brancher();
   maj.surChangement((etat) => {

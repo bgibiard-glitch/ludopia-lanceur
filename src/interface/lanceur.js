@@ -42,7 +42,7 @@ const TEXTES = {
     majTelechargement: 'Téléchargement',
     majPrete: 'Mise à jour prête',
     majAJour: 'Rechercher une mise à jour',
-    majErreur: 'Mise à jour indisponible',
+    majErreur: 'Mise à jour : réessayer',
     accueil: 'Accueil',
     bonjour: 'Votre bibliothèque',
     totalTemps: 'Temps de jeu total',
@@ -55,8 +55,62 @@ const TEXTES = {
     toutesNouvelles: 'Toutes les actualités',
     nouvellesVides: 'Les nouvelles arriveront dès que le réseau répondra.',
     amis: 'Vos amis',
-    amisBientot: 'Le réseau d’amis — voir qui joue à quoi, se parler, se lancer des défis — demande un compte Ludopia. Il n’existe pas encore : rien n’est donc affiché ici plutôt que de faire semblant.',
+    amisConnecter: 'Créez un compte pour voir qui joue à quoi et vous écrire. On ne peut pas vous trouver sans votre code : il n’y a pas d’annuaire.',
+    amisAucun: 'Personne dans vos amis pour l’instant. Échangez votre code.',
+    amisTous: 'Voir tous mes amis',
+    amisEnLigne: 'en ligne',
     riensurvous: 'Rien n’est envoyé à Ludopia : ces chiffres ne quittent pas votre machine.',
+    amisTitre: 'Amis',
+    connexion: 'Se connecter',
+    inscription: 'Créer un compte',
+    pseudo: 'Pseudo',
+    motDePasse: 'Mot de passe',
+    dejaCompte: 'J’ai déjà un compte',
+    pasDeCompte: 'Créer un compte',
+    deconnexion: 'Se déconnecter',
+    monCode: 'Votre code ami',
+    codeExplication: 'Donnez ce code à quelqu’un pour qu’il vous ajoute. On ne peut pas vous trouver autrement : il n’y a pas d’annuaire.',
+    copier: 'Copier',
+    copie: 'Copié',
+    ajouterAmi: 'Ajouter un ami',
+    codeAmi: 'Code à 8 caractères',
+    ajouter: 'Ajouter',
+    demandesRecues: 'Demandes reçues',
+    demandesEnvoyees: 'Demandes envoyées',
+    accepter: 'Accepter',
+    refuser: 'Refuser',
+    mesAmis: 'Vos amis',
+    aucunAmi: 'Personne pour l’instant. Échangez votre code avec quelqu’un.',
+    enAttente: 'en attente',
+    horsLigne: 'Hors ligne',
+    joueA: 'joue à',
+    ecrire: 'Écrire',
+    votreMessage: 'Votre message…',
+    envoyer: 'Envoyer',
+    retirer: 'Retirer de mes amis',
+    bloquerAmi: 'Bloquer',
+    signalerAmi: 'Signaler',
+    confirmerRetrait: 'Retirer cette personne de vos amis ?',
+    confirmerBlocage: 'Bloquer cette personne ? Vous ne recevrez plus ses messages et elle disparaîtra de vos amis.',
+    motifSignalement: 'Que s’est-il passé ?',
+    signalementEnvoye: 'Signalement envoyé. La personne est bloquée.',
+    conversationVide: 'Rien encore. Dites bonjour.',
+    connexionRequise: 'Connectez-vous pour voir vos amis.',
+    horsService: 'Le service est injoignable. Réessayez dans un instant.',
+    erreurs: {
+      pseudo_invalide: 'Pseudo invalide : 3 à 20 caractères, lettres et chiffres.',
+      pseudo_pris: 'Ce pseudo est déjà pris.',
+      mot_de_passe_invalide: 'Mot de passe : 8 caractères au minimum.',
+      identifiants_invalides: 'Pseudo ou mot de passe incorrect.',
+      code_invalide: 'Ce code n’a pas la bonne forme.',
+      code_inconnu: 'Aucun compte ne porte ce code.',
+      code_soi_meme: 'C’est votre propre code.',
+      pas_ami: 'Vous n’êtes plus amis.',
+      message_vide: 'Le message est vide.',
+      reseau: 'Pas de réseau.',
+      delai_depasse: 'Le service met trop de temps à répondre.',
+      non_authentifie: 'Votre session a expiré. Reconnectez-vous.',
+    },
   },
   en: {
     bibliotheque: 'Library',
@@ -92,7 +146,7 @@ const TEXTES = {
     majTelechargement: 'Downloading',
     majPrete: 'Update ready',
     majAJour: 'Check for updates',
-    majErreur: 'Updates unavailable',
+    majErreur: 'Update check failed — retry',
     accueil: 'Home',
     bonjour: 'Your library',
     totalTemps: 'Total time played',
@@ -105,8 +159,62 @@ const TEXTES = {
     toutesNouvelles: 'All the news',
     nouvellesVides: 'News will show up as soon as the network answers.',
     amis: 'Your friends',
-    amisBientot: 'The friends network — seeing who plays what, chatting, sending challenges — needs a Ludopia account. There is none yet, so nothing is shown here rather than pretending.',
+    amisConnecter: 'Create an account to see who is playing what and to write to each other. Nobody can find you without your code: there is no directory.',
+    amisAucun: 'No friends yet. Swap your code with someone.',
+    amisTous: 'See all my friends',
+    amisEnLigne: 'online',
     riensurvous: 'Nothing is sent to Ludopia: these numbers never leave your machine.',
+    amisTitre: 'Friends',
+    connexion: 'Sign in',
+    inscription: 'Create an account',
+    pseudo: 'Name',
+    motDePasse: 'Password',
+    dejaCompte: 'I already have an account',
+    pasDeCompte: 'Create an account',
+    deconnexion: 'Sign out',
+    monCode: 'Your friend code',
+    codeExplication: 'Give this code to someone so they can add you. There is no other way to find you: there is no directory.',
+    copier: 'Copy',
+    copie: 'Copied',
+    ajouterAmi: 'Add a friend',
+    codeAmi: '8-character code',
+    ajouter: 'Add',
+    demandesRecues: 'Requests received',
+    demandesEnvoyees: 'Requests sent',
+    accepter: 'Accept',
+    refuser: 'Decline',
+    mesAmis: 'Your friends',
+    aucunAmi: 'Nobody yet. Swap your code with someone.',
+    enAttente: 'pending',
+    horsLigne: 'Offline',
+    joueA: 'playing',
+    ecrire: 'Message',
+    votreMessage: 'Your message…',
+    envoyer: 'Send',
+    retirer: 'Remove friend',
+    bloquerAmi: 'Block',
+    signalerAmi: 'Report',
+    confirmerRetrait: 'Remove this person from your friends?',
+    confirmerBlocage: 'Block this person? You will stop receiving their messages and they will leave your friends list.',
+    motifSignalement: 'What happened?',
+    signalementEnvoye: 'Report sent. The person is blocked.',
+    conversationVide: 'Nothing yet. Say hello.',
+    connexionRequise: 'Sign in to see your friends.',
+    horsService: 'The service is unreachable. Try again in a moment.',
+    erreurs: {
+      pseudo_invalide: 'Invalid name: 3 to 20 characters, letters and digits.',
+      pseudo_pris: 'That name is taken.',
+      mot_de_passe_invalide: 'Password: 8 characters minimum.',
+      identifiants_invalides: 'Wrong name or password.',
+      code_invalide: 'That code is not in the right shape.',
+      code_inconnu: 'No account carries that code.',
+      code_soi_meme: 'That is your own code.',
+      pas_ami: 'You are no longer friends.',
+      message_vide: 'The message is empty.',
+      reseau: 'No network.',
+      delai_depasse: 'The service is taking too long.',
+      non_authentifie: 'Your session expired. Sign in again.',
+    },
   },
 };
 
@@ -120,8 +228,13 @@ let etat = {
   ouverts: [],
   joignables: {},   // id -> true | false | undefined (pas encore vérifié)
   choisi: null,
-  vue: 'accueil',   // 'accueil' ou 'jeu'
+  vue: 'accueil',   // 'accueil', 'jeu' ou 'amis'
   actualites: null,
+  social: { connecte: false, moi: null },
+  amis: null,           // { amis, demandesRecues, demandesEnvoyees }
+  conversation: null,   // identifiant de l'ami affiché
+  messages: [],
+  formulaire: 'connexion',  // 'connexion' ou 'inscription'
 };
 
 const T = () => TEXTES[etat.langue];
@@ -176,6 +289,13 @@ function dessinerRail() {
   const rail = $('#rail');
   rail.textContent = '';
   $('#accueil')?.setAttribute('aria-current', String(etat.vue === 'accueil'));
+  const boutonAmis = $('#amis');
+  if (boutonAmis) {
+    boutonAmis.setAttribute('aria-current', String(etat.vue === 'amis'));
+    const n = nonLus();
+    boutonAmis.dataset.nonLus = n > 0 ? String(n) : '';
+    $('.rail-amis-libelle', boutonAmis).textContent = T().amisTitre;
+  }
 
   for (const jeu of etat.catalogue.jeux) {
     const cle = etatJeu(jeu);
@@ -371,6 +491,536 @@ function dessinerScene() {
 }
 
 
+
+// =============================================================================
+// Amis
+// =============================================================================
+
+const ICONE_AMIS =
+  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" '
+  + 'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'
+  + '<path d="M16 20v-1.5a3.5 3.5 0 0 0-3.5-3.5h-5A3.5 3.5 0 0 0 4 18.5V20" />'
+  + '<circle cx="10" cy="8" r="3.5" /><path d="M20 20v-1.5a3.5 3.5 0 0 0-2.6-3.4" />'
+  + '<path d="M15.5 4.6a3.5 3.5 0 0 1 0 6.8" /></svg>';
+
+/** Traduit un code d'erreur du service ; à défaut, on montre le code brut
+ *  plutôt qu'un « une erreur est survenue » qui n'aide personne. */
+function messageErreur(code, detail) {
+  return T().erreurs[code] || detail || code || T().horsService;
+}
+
+function bulle(texte, sorte = 'erreur') {
+  const p = document.createElement('p');
+  p.className = `bulle bulle--${sorte}`;
+  p.textContent = texte;
+  return p;
+}
+
+function champ(etiquette, type, nom, autocompletion) {
+  const bloc = document.createElement('label');
+  bloc.className = 'champ';
+  const l = document.createElement('span');
+  l.textContent = etiquette;
+  const i = document.createElement('input');
+  i.type = type;
+  i.name = nom;
+  i.autocomplete = autocompletion;
+  i.spellcheck = false;
+  bloc.append(l, i);
+  return { bloc, entree: i };
+}
+
+// --- connexion et inscription -----------------------------------------------
+
+function dessinerFormulaire(scene) {
+  const t = T();
+  const inscrire = etat.formulaire === 'inscription';
+
+  const bloc = document.createElement('section');
+  bloc.className = 'acc-bloc amis-connexion';
+
+  const h1 = document.createElement('h1');
+  h1.textContent = inscrire ? t.inscription : t.connexion;
+  bloc.append(h1);
+
+  const intro = document.createElement('p');
+  intro.className = 'acc-vide';
+  intro.textContent = t.codeExplication;
+  bloc.append(intro);
+
+  const form = document.createElement('form');
+  form.className = 'formulaire';
+
+  const p = champ(t.pseudo, 'text', 'pseudo', 'username');
+  const m = champ(t.motDePasse, 'password', 'motDePasse',
+    inscrire ? 'new-password' : 'current-password');
+  form.append(p.bloc, m.bloc);
+
+  const erreurs = document.createElement('div');
+  form.append(erreurs);
+
+  const valider = document.createElement('button');
+  valider.type = 'submit';
+  valider.className = 'jouer';
+  valider.textContent = inscrire ? t.inscription : t.connexion;
+  form.append(valider);
+
+  form.addEventListener('submit', async (evt) => {
+    evt.preventDefault();
+    erreurs.textContent = '';
+    valider.disabled = true;
+
+    const action = inscrire ? window.ludopia.social.inscription : window.ludopia.social.connexion;
+    const r = await action(p.entree.value, m.entree.value);
+    valider.disabled = false;
+
+    if (!r.ok) {
+      erreurs.append(bulle(messageErreur(r.erreur, r.detail)));
+      m.entree.value = '';
+      m.entree.focus();
+      return;
+    }
+    etat.social = { connecte: true, moi: r.donnees };
+    await rafraichirAmis();
+    dessinerAmis();
+  });
+
+  bloc.append(form);
+
+  const bascule = document.createElement('button');
+  bascule.type = 'button';
+  bascule.className = 'rail-lien';
+  bascule.textContent = inscrire ? t.dejaCompte : t.pasDeCompte;
+  bascule.addEventListener('click', () => {
+    etat.formulaire = inscrire ? 'connexion' : 'inscription';
+    dessinerAmis();
+  });
+  bloc.append(bascule);
+
+  scene.append(bloc);
+  // Le curseur dans le premier champ : c'est la seule chose à faire ici.
+  setTimeout(() => p.entree.focus(), 30);
+}
+
+// --- carte d'un ami ----------------------------------------------------------
+
+function etatAmi(ami) {
+  const t = T();
+  if (ami.jeu) {
+    const jeu = etat.catalogue.jeux.find((j) => j.id === ami.jeu);
+    return { texte: `${t.joueA} ${jeu ? jeu.nom : ami.jeu}`, sorte: 'joue' };
+  }
+  if (ami.enLigne) return { texte: t.enLigne, sorte: 'en-ligne' };
+  return { texte: `${t.horsLigne} · ${quand(ami.vuLe ? ami.vuLe * 1000 : null)}`, sorte: 'hors' };
+}
+
+function carteAmi(ami, actions) {
+  const el = document.createElement('article');
+  el.className = 'ami';
+  const e = etatAmi(ami);
+  el.dataset.etat = e.sorte;
+
+  const tete = document.createElement('div');
+  tete.className = 'ami-tete';
+
+  const nom = document.createElement('p');
+  nom.className = 'ami-nom';
+  nom.textContent = ami.pseudo;
+  if (ami.nonLus) {
+    const pastille = document.createElement('b');
+    pastille.className = 'ami-pastille';
+    pastille.textContent = String(ami.nonLus);
+    nom.append(pastille);
+  }
+
+  const sous = document.createElement('p');
+  sous.className = 'ami-etat';
+  sous.innerHTML = '<i></i>';
+  sous.append(e.texte);
+
+  tete.append(nom, sous);
+  el.append(tete);
+
+  const barre = document.createElement('div');
+  barre.className = 'ami-actions';
+  for (const [libelle, sorte, action] of actions) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = sorte === 'principal' ? 'btn-mini btn-mini--fort' : 'btn-mini';
+    b.textContent = libelle;
+    b.addEventListener('click', action);
+    barre.append(b);
+  }
+  el.append(barre);
+  return el;
+}
+
+// --- la liste ----------------------------------------------------------------
+
+function dessinerListeAmis(scene) {
+  const t = T();
+  const d = etat.amis || { amis: [], demandesRecues: [], demandesEnvoyees: [] };
+
+  // --- mon code ---
+  const enTete = document.createElement('section');
+  enTete.className = 'acc-tete amis-tete';
+
+  const titre = document.createElement('h1');
+  titre.textContent = t.amisTitre;
+  enTete.append(titre);
+
+  const carteCode = document.createElement('div');
+  carteCode.className = 'code-carte';
+
+  const etiquette = document.createElement('p');
+  etiquette.className = 'code-etiquette';
+  etiquette.textContent = t.monCode;
+
+  const valeur = document.createElement('p');
+  valeur.className = 'code-valeur';
+  const brut = etat.social.moi?.codeAmi || '';
+  // Deux groupes de quatre : un code de huit caractères se dicte mal d'un bloc.
+  valeur.textContent = brut ? `${brut.slice(0, 4)} ${brut.slice(4)}` : '—';
+
+  const copier = document.createElement('button');
+  copier.type = 'button';
+  copier.className = 'btn-mini';
+  copier.textContent = t.copier;
+  copier.addEventListener('click', async () => {
+    await navigator.clipboard.writeText(brut);
+    copier.textContent = t.copie;
+    setTimeout(() => { copier.textContent = t.copier; }, 1600);
+  });
+
+  const explication = document.createElement('p');
+  explication.className = 'code-explication';
+  explication.textContent = t.codeExplication;
+
+  carteCode.append(etiquette, valeur, copier, explication);
+  enTete.append(carteCode);
+
+  // --- ajouter ---
+  const form = document.createElement('form');
+  form.className = 'ajout-ami';
+  const saisie = document.createElement('input');
+  saisie.type = 'text';
+  saisie.placeholder = t.codeAmi;
+  saisie.maxLength = 9;
+  saisie.spellcheck = false;
+  const bouton = document.createElement('button');
+  bouton.type = 'submit';
+  bouton.className = 'btn-mini btn-mini--fort';
+  bouton.textContent = t.ajouter;
+  const retour = document.createElement('div');
+  retour.className = 'ajout-retour';
+
+  form.addEventListener('submit', async (evt) => {
+    evt.preventDefault();
+    retour.textContent = '';
+    bouton.disabled = true;
+    const r = await window.ludopia.social.ajouterAmi(saisie.value);
+    bouton.disabled = false;
+    if (!r.ok) {
+      retour.append(bulle(messageErreur(r.erreur, r.detail)));
+      return;
+    }
+    saisie.value = '';
+    await rafraichirAmis();
+    dessinerAmis();
+  });
+
+  form.append(saisie, bouton);
+  enTete.append(form, retour);
+  scene.append(enTete);
+
+  // --- demandes reçues ---
+  if (d.demandesRecues.length) {
+    const bloc = document.createElement('section');
+    bloc.className = 'acc-bloc';
+    const h2 = document.createElement('h2');
+    h2.textContent = t.demandesRecues;
+    bloc.append(h2);
+    const liste = document.createElement('div');
+    liste.className = 'amis-grille';
+    for (const a of d.demandesRecues) {
+      liste.append(carteAmi(a, [
+        [t.accepter, 'principal', async () => {
+          await window.ludopia.social.repondreAmi(a.id, true);
+          await rafraichirAmis();
+          dessinerAmis();
+        }],
+        [t.refuser, 'discret', async () => {
+          await window.ludopia.social.repondreAmi(a.id, false);
+          await rafraichirAmis();
+          dessinerAmis();
+        }],
+      ]));
+    }
+    bloc.append(liste);
+    scene.append(bloc);
+  }
+
+  // --- amis ---
+  const bloc = document.createElement('section');
+  bloc.className = 'acc-bloc';
+  const h2 = document.createElement('h2');
+  h2.textContent = t.mesAmis;
+  bloc.append(h2);
+
+  if (!d.amis.length) {
+    bloc.append(bulle(t.aucunAmi, 'calme'));
+  } else {
+    const liste = document.createElement('div');
+    liste.className = 'amis-grille';
+    for (const a of d.amis) {
+      liste.append(carteAmi(a, [
+        [t.ecrire, 'principal', () => ouvrirConversation(a.id)],
+        [t.bloquerAmi, 'discret', async () => {
+          if (!window.confirm(t.confirmerBlocage)) return;
+          await window.ludopia.social.bloquer(a.id, true);
+          await rafraichirAmis();
+          dessinerAmis();
+        }],
+        [t.signalerAmi, 'discret', async () => {
+          const motif = window.prompt(t.motifSignalement);
+          if (motif === null) return;
+          await window.ludopia.social.signaler(a.id, motif);
+          await rafraichirAmis();
+          dessinerAmis();
+          window.alert(t.signalementEnvoye);
+        }],
+      ]));
+    }
+    bloc.append(liste);
+  }
+  scene.append(bloc);
+
+  // --- demandes envoyées ---
+  if (d.demandesEnvoyees.length) {
+    const attente = document.createElement('section');
+    attente.className = 'acc-bloc';
+    const h = document.createElement('h2');
+    h.textContent = t.demandesEnvoyees;
+    attente.append(h);
+    const liste = document.createElement('div');
+    liste.className = 'amis-grille';
+    for (const a of d.demandesEnvoyees) {
+      liste.append(carteAmi(a, [[t.retirer, 'discret', async () => {
+        await window.ludopia.social.retirerAmi(a.id);
+        await rafraichirAmis();
+        dessinerAmis();
+      }]]));
+    }
+    attente.append(liste);
+    scene.append(attente);
+  }
+
+  // --- déconnexion ---
+  const pied = document.createElement('section');
+  pied.className = 'acc-bloc';
+  const sortir = document.createElement('button');
+  sortir.type = 'button';
+  sortir.className = 'action-secondaire';
+  sortir.textContent = t.deconnexion;
+  sortir.addEventListener('click', async () => {
+    await window.ludopia.social.deconnexion();
+    etat.social = { connecte: false, moi: null };
+    etat.amis = null;
+    dessinerAmis();
+  });
+  pied.append(sortir);
+  scene.append(pied);
+}
+
+// --- conversation ------------------------------------------------------------
+
+function dessinerConversation(scene) {
+  const t = T();
+  const ami = (etat.amis?.amis || []).find((a) => a.id === etat.conversation);
+  if (!ami) {
+    etat.conversation = null;
+    dessinerListeAmis(scene);
+    return;
+  }
+
+  const bloc = document.createElement('section');
+  bloc.className = 'conversation';
+
+  // --- en-tête ---
+  const tete = document.createElement('div');
+  tete.className = 'conv-tete';
+
+  const retour = document.createElement('button');
+  retour.type = 'button';
+  retour.className = 'btn-mini';
+  retour.textContent = '←';
+  retour.setAttribute('aria-label', t.amisTitre);
+  retour.addEventListener('click', () => {
+    etat.conversation = null;
+    dessinerAmis();
+  });
+
+  const qui = document.createElement('div');
+  const nom = document.createElement('p');
+  nom.className = 'conv-nom';
+  nom.textContent = ami.pseudo;
+  const e = etatAmi(ami);
+  const sous = document.createElement('p');
+  sous.className = 'ami-etat';
+  sous.dataset.etat = e.sorte;
+  sous.innerHTML = '<i></i>';
+  sous.append(e.texte);
+  qui.append(nom, sous);
+
+  tete.append(retour, qui);
+  bloc.append(tete);
+
+  // --- fil ---
+  const fil = document.createElement('div');
+  fil.className = 'conv-fil';
+  if (!etat.messages.length) {
+    fil.append(bulle(t.conversationVide, 'calme'));
+  } else {
+    for (const m of etat.messages) {
+      const el = document.createElement('div');
+      el.className = m.expediteur === etat.social.moi?.id ? 'msg msg--moi' : 'msg';
+      const texte = document.createElement('p');
+      texte.textContent = m.texte;
+      const heure = document.createElement('span');
+      heure.className = 'msg-heure';
+      heure.textContent = new Date(m.envoye_le * 1000).toLocaleTimeString(
+        etat.langue === 'fr' ? 'fr-FR' : 'en-GB', { hour: '2-digit', minute: '2-digit' },
+      );
+      el.append(texte, heure);
+      fil.append(el);
+    }
+  }
+  bloc.append(fil);
+
+  // --- saisie ---
+  const form = document.createElement('form');
+  form.className = 'conv-saisie';
+  const saisie = document.createElement('input');
+  saisie.type = 'text';
+  saisie.placeholder = t.votreMessage;
+  saisie.maxLength = 1000;
+  const envoyer = document.createElement('button');
+  envoyer.type = 'submit';
+  envoyer.className = 'btn-mini btn-mini--fort';
+  envoyer.textContent = t.envoyer;
+
+  form.addEventListener('submit', async (evt) => {
+    evt.preventDefault();
+    const texte = saisie.value.trim();
+    if (!texte) return;
+    saisie.value = '';
+    const r = await window.ludopia.social.envoyer(ami.id, texte);
+    if (!r.ok) {
+      fil.append(bulle(messageErreur(r.erreur, r.detail)));
+      return;
+    }
+    await rafraichirConversation();
+    dessinerAmis();
+  });
+
+  form.append(saisie, envoyer);
+  bloc.append(form);
+  scene.append(bloc);
+
+  // Le fil se lit par le bas, et le curseur attend dans le champ.
+  setTimeout(() => {
+    fil.scrollTop = fil.scrollHeight;
+    saisie.focus();
+  }, 30);
+}
+
+// --- assemblage --------------------------------------------------------------
+
+function dessinerAmis() {
+  const scene = $('#scene');
+  scene.textContent = '';
+  scene.style.setProperty('--accent', 'var(--brand)');
+  scene.style.setProperty('--accent-ink', '#080813');
+
+  if (!etat.social.connecte) {
+    dessinerFormulaire(scene);
+  } else if (etat.conversation) {
+    dessinerConversation(scene);
+  } else {
+    dessinerListeAmis(scene);
+  }
+  dessinerRail();
+  scene.scrollTop = 0;
+}
+
+async function rafraichirAmis() {
+  const r = await window.ludopia.social.amis();
+  if (r.ok) etat.amis = r.donnees;
+  return r.ok;
+}
+
+async function rafraichirConversation() {
+  if (!etat.conversation) return;
+  const r = await window.ludopia.social.messages(etat.conversation, 0);
+  if (r.ok) etat.messages = r.donnees.messages || [];
+}
+
+async function ouvrirConversation(id) {
+  etat.conversation = id;
+  etat.messages = [];
+  dessinerAmis();
+  await rafraichirConversation();
+  await window.ludopia.social.marquerLus(id);
+  await rafraichirAmis();
+  dessinerAmis();
+}
+
+function ouvrirAmis() {
+  etat.vue = 'amis';
+  etat.conversation = null;
+  dessinerAmis();
+  if (etat.social.connecte) {
+    rafraichirAmis().then(() => { if (etat.vue === 'amis') dessinerAmis(); });
+  }
+}
+
+/**
+ * Interrogation périodique : c'est ce qui remplace une connexion permanente.
+ * On va plus vite quand une conversation est ouverte — l'attente d'une réponse
+ * se compte en secondes — et on se calme le reste du temps.
+ */
+let horlogeSociale = null;
+function suivreLeSocial() {
+  clearInterval(horlogeSociale);
+  horlogeSociale = setInterval(async () => {
+    if (!etat.social.connecte) return;
+
+    if (etat.vue === 'amis' && etat.conversation) {
+      const avant = etat.messages.length;
+      await rafraichirConversation();
+      await window.ludopia.social.marquerLus(etat.conversation);
+      if (etat.messages.length !== avant) dessinerAmis();
+      return;
+    }
+
+    const avant = JSON.stringify(etat.amis?.amis?.map((a) => [a.enLigne, a.jeu, a.nonLus]));
+    await rafraichirAmis();
+    const apres = JSON.stringify(etat.amis?.amis?.map((a) => [a.enLigne, a.jeu, a.nonLus]));
+    if (avant !== apres) {
+      dessinerRail();
+      if (etat.vue === 'amis') dessinerAmis();
+    }
+  }, 5000);
+}
+
+/** Total des messages non lus, pour la pastille du rail. */
+function nonLus() {
+  const d = etat.amis;
+  if (!d) return 0;
+  return (d.amis || []).reduce((n, a) => n + (a.nonLus || 0), 0)
+    + (d.demandesRecues || []).length;
+}
+
 // =============================================================================
 // Accueil
 // =============================================================================
@@ -523,15 +1173,52 @@ function dessinerAccueil() {
   }
   scene.append(bloc);
 
-  // --- les amis, honnêtement ---
+  // --- les amis ---
   const amis = document.createElement('section');
   amis.className = 'acc-bloc';
   const h2a = document.createElement('h2');
   h2a.textContent = t.amis;
-  const p = document.createElement('p');
-  p.className = 'acc-vide';
-  p.textContent = t.amisBientot;
-  amis.append(h2a, p);
+  amis.append(h2a);
+
+  if (!etat.social.connecte) {
+    amis.append(bulle(t.amisConnecter, 'calme'));
+    const inviter = document.createElement('button');
+    inviter.type = 'button';
+    inviter.className = 'action-secondaire';
+    inviter.textContent = t.inscription;
+    inviter.addEventListener('click', () => {
+      etat.formulaire = 'inscription';
+      ouvrirAmis();
+    });
+    amis.append(inviter);
+  } else {
+    const liste = etat.amis?.amis || [];
+    if (!liste.length) {
+      amis.append(bulle(t.amisAucun, 'calme'));
+    } else {
+      // Les personnes en ligne d'abord : c'est avec elles qu'on peut jouer
+      // maintenant, et c'est la seule raison de regarder cette liste.
+      const ordonnes = [...liste].sort(
+        (x, y) => Number(Boolean(y.jeu)) - Number(Boolean(x.jeu))
+               || Number(y.enLigne) - Number(x.enLigne),
+      );
+      const grille = document.createElement('div');
+      grille.className = 'amis-grille';
+      for (const a of ordonnes.slice(0, 6)) {
+        grille.append(carteAmi(a, [[t.ecrire, 'principal', () => {
+          etat.vue = 'amis';
+          ouvrirConversation(a.id);
+        }]]));
+      }
+      amis.append(grille);
+    }
+    const tous = document.createElement('button');
+    tous.type = 'button';
+    tous.className = 'action-secondaire';
+    tous.textContent = t.amisTous;
+    tous.addEventListener('click', ouvrirAmis);
+    amis.append(tous);
+  }
   scene.append(amis);
 
   scene.scrollTop = 0;
@@ -554,6 +1241,7 @@ function choisir(id) {
 function redessiner() {
   dessinerRail();
   if (etat.vue === 'accueil') dessinerAccueil();
+  else if (etat.vue === 'amis') dessinerAmis();
   else dessinerScene();
 }
 
@@ -652,6 +1340,27 @@ async function demarrer() {
   sonder();
 
   $('#accueil')?.addEventListener('click', ouvrirAccueil);
+  $('#amis')?.addEventListener('click', ouvrirAmis);
+
+  // La session sociale est reprise par le processus principal : on lit son
+  // etat, puis on suit ses changements.
+  window.ludopia.social.etat().then(async (e) => {
+    etat.social = e;
+    if (e.connecte) {
+      await rafraichirAmis();
+      dessinerRail();
+      if (etat.vue === 'amis') dessinerAmis();
+    }
+    suivreLeSocial();
+  });
+
+  window.ludopia.social.surChangement(async (e) => {
+    etat.social = e;
+    if (e.connecte) await rafraichirAmis();
+    else etat.amis = null;
+    dessinerRail();
+    if (etat.vue === 'amis') dessinerAmis();
+  });
 
   // Les nouvelles arrivent du site : la page s'affiche sans les attendre.
   window.ludopia.actualites().then((flux) => {

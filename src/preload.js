@@ -24,6 +24,32 @@ contextBridge.exposeInMainWorld('ludopia', {
 
   actualites: () => ipcRenderer.invoke('actualites:lire'),
 
+  /* Le service social. L'interface ne voit jamais le jeton de session ni
+     l'adresse du service : elle demande, le processus principal répond. */
+  social: {
+    etat: () => ipcRenderer.invoke('social:etat'),
+    inscription: (pseudo, mdp) => ipcRenderer.invoke('social:inscription', pseudo, mdp),
+    connexion: (pseudo, mdp) => ipcRenderer.invoke('social:connexion', pseudo, mdp),
+    deconnexion: () => ipcRenderer.invoke('social:deconnexion'),
+
+    amis: () => ipcRenderer.invoke('social:amis'),
+    ajouterAmi: (code) => ipcRenderer.invoke('social:ajouterAmi', code),
+    repondreAmi: (id, accepte) => ipcRenderer.invoke('social:repondreAmi', id, accepte),
+    retirerAmi: (id) => ipcRenderer.invoke('social:retirerAmi', id),
+    bloquer: (id, actif) => ipcRenderer.invoke('social:bloquer', id, actif),
+    signaler: (id, motif) => ipcRenderer.invoke('social:signaler', id, motif),
+
+    messages: (avec, depuis) => ipcRenderer.invoke('social:messages', avec, depuis),
+    envoyer: (vers, texte) => ipcRenderer.invoke('social:envoyer', vers, texte),
+    marquerLus: (avec) => ipcRenderer.invoke('social:marquerLus', avec),
+
+    surChangement: (rappel) => {
+      const ecouteur = (_evt, etat) => rappel(etat);
+      ipcRenderer.on('social:changement', ecouteur);
+      return () => ipcRenderer.removeListener('social:changement', ecouteur);
+    },
+  },
+
   majEtat: () => ipcRenderer.invoke('maj:etat'),
   majChercher: () => ipcRenderer.invoke('maj:chercher'),
 
