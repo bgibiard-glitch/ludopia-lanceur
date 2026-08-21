@@ -55,13 +55,22 @@ macOS d'intégration continue.
 ## Publier
 
 ```bash
-python outils/publier-r2.py
+gh release create v1.2.0 dist/*.exe dist/latest.yml --repo bgibiard-glitch/ludopia-lanceur
+python outils/publier-github.py --index
+python ../tools/gen-page-telecharger.py
 ```
 
-Dépose les installateurs sur Cloudflare R2 derrière `dl.ludopia.fr` et écrit
-`assets/telechargements.json` à la racine du site. À n'utiliser que si les
-fichiers dépassent 25 Mo — en deçà, ils tiennent directement sur Cloudflare
-Pages, ce qui évite d'activer R2.
+Les installateurs vivent dans les releases GitHub : Cloudflare Pages plafonne à
+25 Mo par fichier et un paquet Electron pèse quatre fois plus. Le site n'héberge
+que `assets/telechargements.json`, qui pointe vers eux et porte les compteurs de
+téléchargement — la page « Télécharger » se remplit seule à partir de ce fichier.
+
+**`latest.yml` doit accompagner l'installateur** dans la release : c'est le flux
+que lit `electron-updater`. Sans lui, les lanceurs déjà installés cherchent une
+mise à jour et ne trouvent rien.
+
+`outils/publier-r2.py` fait la même chose sur Cloudflare R2, si l'on préfère un
+hébergement privé. R2 doit alors être activé sur le compte.
 
 ## Comment c'est bâti
 
