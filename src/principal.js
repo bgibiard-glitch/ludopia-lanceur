@@ -15,6 +15,7 @@ const fs = require('node:fs');
 const donnees = require('./donnees');
 const maj = require('./maj');
 const social = require('./social');
+const avis = require('./avis');
 
 const RACINE = path.join(__dirname, '..');
 const SITE = 'https://ludopia.fr';
@@ -33,6 +34,7 @@ let plateau = null;                       // icône de la zone de notification
 const fenetresJeu = new Map();            // id du jeu -> BrowserWindow
 const chronos = new Map();                // id du jeu -> horodatage de lancement
 let catalogue = null;
+let conversationOuverte = null;   // ce que l'interface affiche, pour les avis
 
 // =============================================================================
 // Catalogue
@@ -485,6 +487,7 @@ function brancherIpc() {
   ipcMain.handle('lien:ouvrir', (_evt, url) => { ouvrirDehors(url); });
 
   ipcMain.handle('actualites:lire', () => chargerActualites());
+  ipcMain.handle('classement:lire', () => social.classement());
 
   // --- service social ---
   ipcMain.handle('social:etat', () => social.etat());
@@ -507,7 +510,14 @@ function brancherIpc() {
   ipcMain.handle('social:attendreMessages', (_e, avec, depuis) =>
     social.attendreMessages(avec, depuis));
   ipcMain.handle('social:envoyer', (_e, vers, texte) => social.envoyer(vers, texte));
-  ipcMain.handle('social:marquerLus', (_e, avec) => social.marquerLus(avec));
+  ipcMain.handle('social:marquerLus', (_e, avec) => {
+    avis.vuePar(avec);
+    return social.marquerLus(avec);
+  });
+
+  // L'interface dit ce qu'elle affiche : sans cela, un avis partirait pour un
+  // message déjà sous les yeux.
+  ipcMain.on('social:conversationAffichee', (_e, id) => { conversationOuverte = id || null; });
 
   ipcMain.handle('maj:etat', () => ({ ...maj.etat(), disponible: maj.disponible() }));
   ipcMain.handle('maj:chercher', () => maj.chercher(true, fenetreBibliotheque));
@@ -530,6 +540,46 @@ app.whenReady().then(async () => {
 
   catalogue = catalogueLocal();
   brancherIpc();
+
+  /* Les avis du système. Ils ont besoin de savoir ce que l'utilisateur a sous
+     les yeux : signaler un message qu'il est en train de lire serait une
+     nuisance. L'interface tient le processus principal au courant de la
+     conversation ouverte. */
+  avis.brancher({
+    ouvrir: (idAmi) => {
+      montrerBibliotheque();
+      if (fenetreBibliotheque && !fenetreBibliotheque.isDestroyed()) {
+        fenetreBibliotheque.webContents.send('social:ouvrirConversation', idAmi);
+      }
+    },
+    visible: () => Boolean(fenetreBibliotheque && !fenetreBibliotheque.isDestroyed()
+      && fenetreBibliotheque.isVisible() && !fenetreBibliotheque.isMinimized()
+      && fenetreBibliotheque.isFocused()),
+    conversation: () => conversationOuverte,
+  });
+
+  social.surMessages(async (recus) => {
+    // Le service donne des identifiants, pas des pseudos : on les retrouve
+    // dans la liste d'amis, qui les porte déjà.
+    const r = await social.amis();
+    if (!r.ok) return;
+    const parId = new Map((r.donnees.amis || []).map((a) => [a.id, a]));
+
+    const parExpediteur = new Map();
+    for (const m of recus) {
+      if (!parExpediteur.has(m.expediteur)) parExpediteur.set(m.expediteur, []);
+      parExpediteur.get(m.expediteur).push(m.texte);
+    }
+
+    for (const [id, textes] of parExpediteur) {
+      const ami = parId.get(id);
+      if (ami) avis.messageRecu(ami, textes);
+    }
+
+    if (fenetreBibliotheque && !fenetreBibliotheque.isDestroyed()) {
+      fenetreBibliotheque.webContents.send('social:nouveauxMessages', recus);
+    }
+  });
 
   social.surChangement(() => {
     if (fenetreBibliotheque && !fenetreBibliotheque.isDestroyed()) {

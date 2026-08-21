@@ -70,6 +70,13 @@ const TEXTES = {
     pseudoAide: 'C’est ce que verront vos amis.',
     courrielAide: 'Elle sert à vous connecter. Elle n’est jamais montrée à personne.',
     conversations: 'Conversations',
+    classement: 'Le classement de la semaine',
+    plusJoues: 'Les plus joués',
+    quiMontent: 'Ceux qui montent',
+    joueurs: 'joueurs',
+    unJoueur: 'joueur',
+    classementPortee: 'Comptes connectés au lanceur ayant ouvert un jeu, sur sept jours. Les joueurs du navigateur ne sont pas comptés — le service ne les voit pas.',
+    classementVide: 'Pas encore assez de parties pour établir un classement.',
     dejaCompte: 'J’ai déjà un compte',
     pasDeCompte: 'Créer un compte',
     deconnexion: 'Se déconnecter',
@@ -182,6 +189,13 @@ const TEXTES = {
     pseudoAide: 'This is what your friends will see.',
     courrielAide: 'Used to sign in. It is never shown to anyone.',
     conversations: 'Conversations',
+    classement: 'This week’s ranking',
+    plusJoues: 'Most played',
+    quiMontent: 'Rising',
+    joueurs: 'players',
+    unJoueur: 'player',
+    classementPortee: 'Accounts signed in to the launcher that opened a game, over seven days. Browser players are not counted — the service does not see them.',
+    classementVide: 'Not enough sessions yet to build a ranking.',
     dejaCompte: 'I already have an account',
     pasDeCompte: 'Create an account',
     deconnexion: 'Sign out',
@@ -246,6 +260,7 @@ let etat = {
   choisi: null,
   vue: 'accueil',   // 'accueil', 'jeu' ou 'amis'
   actualites: null,
+  classement: null,
   social: { connecte: false, moi: null },
   amis: null,           // { amis, demandesRecues, demandesEnvoyees }
   conversation: null,   // identifiant de l'ami affiché
@@ -891,6 +906,7 @@ function dessinerConversation(scene) {
   retour.setAttribute('aria-label', t.amisTitre);
   retour.addEventListener('click', () => {
     etat.conversation = null;
+    window.ludopia.social.conversationAffichee(null);
     dessinerAmis();
   });
 
@@ -1023,6 +1039,7 @@ async function rafraichirConversation() {
 async function ouvrirConversation(id) {
   etat.vue = 'amis';
   etat.conversation = id;
+  window.ludopia.social.conversationAffichee(id);
   etat.messages = [];
   dessinerAmis();
   await rafraichirConversation();
@@ -1100,6 +1117,7 @@ function dessinerChats() {
 function ouvrirAmis() {
   etat.vue = 'amis';
   etat.conversation = null;
+  window.ludopia.social.conversationAffichee(null);
   dessinerAmis();
   if (etat.social.connecte) {
     rafraichirAmis().then(() => {
@@ -1297,6 +1315,67 @@ function dessinerAccueil() {
     bloc.append(carte);
     scene.append(bloc);
   }
+
+  // --- le classement ---
+  const rang = document.createElement('section');
+  rang.className = 'acc-bloc';
+  const h2r = document.createElement('h2');
+  h2r.textContent = t.classement;
+  rang.append(h2r);
+
+  const c = etat.classement;
+  if (!c || (!c.plusJoues?.length && !c.quiMontent?.length)) {
+    rang.append(bulle(t.classementVide, 'calme'));
+  } else {
+    const nomDuJeu = (id) => etat.catalogue.jeux.find((j) => j.id === id)?.nom || id;
+    const accentDuJeu = (id) => etat.catalogue.jeux.find((j) => j.id === id)?.accent || 'var(--brand)';
+
+    const colonnes = document.createElement('div');
+    colonnes.className = 'classement';
+
+    /* Deux listes plutôt qu'un chiffre unique. Un classement brut fige la
+       hiérarchie : le plus ancien est en tête, y reste, et sa position même
+       lui amène des joueurs. « Ceux qui montent » compare une semaine à la
+       précédente, où un petit jeu qui double passe devant un gros qui stagne.
+       Deux listes honnêtes valent mieux qu'une formule qui cacherait
+       l'arbitrage. */
+    for (const [titre, liste, mesure] of [
+      [t.plusJoues, c.plusJoues, (j) => `${j.joueurs} ${j.joueurs > 1 ? t.joueurs : t.unJoueur}`],
+      [t.quiMontent, c.quiMontent,
+        (j) => `${j.progression > 0 ? '+' : ''}${Math.round(j.progression * 100)} %`],
+    ]) {
+      if (!liste?.length) continue;
+      const col = document.createElement('div');
+      col.className = 'classement-col';
+      const h3 = document.createElement('h3');
+      h3.textContent = titre;
+      col.append(h3);
+
+      const ol = document.createElement('ol');
+      liste.slice(0, 5).forEach((j, i) => {
+        const li = document.createElement('li');
+        li.style.setProperty('--accent', accentDuJeu(j.jeu));
+        const rangNum = document.createElement('b');
+        rangNum.textContent = String(i + 1);
+        const nom = document.createElement('span');
+        nom.textContent = nomDuJeu(j.jeu);
+        const val = document.createElement('em');
+        val.textContent = mesure(j);
+        li.append(rangNum, nom, val);
+        li.addEventListener('click', () => choisir(j.jeu));
+        ol.append(li);
+      });
+      col.append(ol);
+      colonnes.append(col);
+    }
+    rang.append(colonnes);
+
+    const portee = document.createElement('p');
+    portee.className = 'acc-note';
+    portee.textContent = t.classementPortee;
+    rang.append(portee);
+  }
+  scene.append(rang);
 
   // --- les nouvelles ---
   const bloc = document.createElement('section');
@@ -1524,6 +1603,20 @@ async function demarrer() {
     suivreLeSocial();
   });
 
+  window.ludopia.social.surOuvertureDemandee((idAmi) => {
+    ouvrirConversation(idAmi);
+  });
+
+  window.ludopia.social.surNouveauxMessages(async () => {
+    // Le processus principal a vu passer des messages : les compteurs de
+    // non-lus changent, quelle que soit la vue affichée.
+    await rafraichirAmis();
+    dessinerRail();
+    dessinerChats();
+    if (etat.vue === 'accueil') dessinerAccueil();
+    else if (etat.vue === 'amis' && !etat.conversation) dessinerAmis();
+  });
+
   window.ludopia.social.surChangement(async (e) => {
     etat.social = e;
     if (e.connecte) await rafraichirAmis();
@@ -1538,6 +1631,12 @@ async function demarrer() {
   window.ludopia.actualites().then((flux) => {
     if (!flux) return;
     etat.actualites = flux;
+    if (etat.vue === 'accueil') dessinerAccueil();
+  });
+
+  window.ludopia.classement().then((r) => {
+    if (!r?.ok) return;
+    etat.classement = r.donnees;
     if (etat.vue === 'accueil') dessinerAccueil();
   });
 

@@ -27,6 +27,9 @@ let moi = null;
 let horloge = null;
 let jeuEnCours = null;
 let prevenir = () => {};
+let surMessages = () => {};
+let dernierVu = 0;
+let ecouteActive = false;
 
 // =============================================================================
 // Transport
@@ -101,6 +104,7 @@ function retenirSession(nouveauJeton, profil) {
   moi = profil;
   donnees.set('social', { jeton: chiffrer(nouveauJeton), moi: profil });
   demarrerBattement();
+  calerLeCurseur().then(ecouterMessages);
   prevenir();
 }
 
@@ -135,6 +139,8 @@ async function reprendre() {
   moi = r.donnees;
   donnees.set('social', { jeton: chiffrer(jeton), moi });
   demarrerBattement();
+  await calerLeCurseur();
+  ecouterMessages();
   return true;
 }
 
@@ -153,6 +159,54 @@ function demarrerBattement() {
 function arreterBattement() {
   if (horloge) clearInterval(horloge);
   horloge = null;
+}
+
+// =============================================================================
+// Surveillance des messages
+// =============================================================================
+
+/**
+ * Écoute les messages entrants, en continu, dans le processus principal.
+ *
+ * L'interface écoute déjà la conversation ouverte — mais elle ne peut rien
+ * signaler quand le lanceur est réduit et qu'on est en pleine partie, ce qui
+ * est précisément le moment où un ami écrit. Cette écoute-ci ne dépend
+ * d'aucune fenêtre.
+ *
+ * La requête reste ouverte jusqu'à l'arrivée d'un message : rien ne circule
+ * tant qu'il ne se passe rien.
+ */
+async function ecouterMessages() {
+  if (ecouteActive) return;
+  ecouteActive = true;
+
+  try {
+    while (jeton) {
+      const r = await appel('GET', `/messages?depuis=${dernierVu}&attendre=1`, { delai: 32000 });
+      if (!jeton) break;
+
+      if (r.ok && (r.donnees.messages || []).length) {
+        const recus = r.donnees.messages;
+        dernierVu = recus.reduce((n, m) => Math.max(n, Number(m.id) || 0), dernierVu);
+        surMessages(recus);
+      } else if (!r.ok && r.erreur !== 'delai_depasse') {
+        // Réseau coupé : on souffle plutôt que de boucler sur l'échec.
+        await new Promise((f) => setTimeout(f, 5000));
+      }
+    }
+  } finally {
+    ecouteActive = false;
+  }
+}
+
+/** Au démarrage : on part du dernier message existant, pour ne pas signaler
+ *  d'un coup tout l'historique d'une conversation. */
+async function calerLeCurseur() {
+  const r = await appel('GET', '/messages?depuis=0&limite=200');
+  if (r.ok) {
+    dernierVu = (r.donnees.messages || [])
+      .reduce((n, m) => Math.max(n, Number(m.id) || 0), 0);
+  }
 }
 
 /** Appelé quand une fenêtre de jeu s'ouvre ou se ferme. */
@@ -202,6 +256,7 @@ module.exports = {
   deconnexion,
   signalerJeu,
   surChangement: (f) => { prevenir = f; },
+  surMessages: (f) => { surMessages = f; },
 
   amis: () => appel('GET', '/amis'),
   ajouterAmi: (code) => appel('POST', '/amis/demande', { corps: { code } }),
@@ -227,4 +282,5 @@ module.exports = {
   marquerLus: (avec) => appel('POST', '/messages/lus', { corps: { avec } }),
 
   actualites: () => appel('GET', '/actualites', { avecJeton: false }),
+  classement: () => appel('GET', '/classement', { avecJeton: false }),
 };

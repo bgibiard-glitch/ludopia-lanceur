@@ -23,6 +23,7 @@ contextBridge.exposeInMainWorld('ludopia', {
   ouvrirLien: (url) => ipcRenderer.invoke('lien:ouvrir', url),
 
   actualites: () => ipcRenderer.invoke('actualites:lire'),
+  classement: () => ipcRenderer.invoke('classement:lire'),
 
   /* Le service social. L'interface ne voit jamais le jeton de session ni
      l'adresse du service : elle demande, le processus principal répond. */
@@ -52,6 +53,24 @@ contextBridge.exposeInMainWorld('ludopia', {
       ipcRenderer.on('social:changement', ecouteur);
       return () => ipcRenderer.removeListener('social:changement', ecouteur);
     },
+
+    /** Le système demande d'ouvrir une conversation : clic sur un avis. */
+    surOuvertureDemandee: (rappel) => {
+      const ecouteur = (_evt, id) => rappel(id);
+      ipcRenderer.on('social:ouvrirConversation', ecouteur);
+      return () => ipcRenderer.removeListener('social:ouvrirConversation', ecouteur);
+    },
+
+    /** Des messages sont arrivés, quelle que soit la vue affichée. */
+    surNouveauxMessages: (rappel) => {
+      const ecouteur = (_evt, messages) => rappel(messages);
+      ipcRenderer.on('social:nouveauxMessages', ecouteur);
+      return () => ipcRenderer.removeListener('social:nouveauxMessages', ecouteur);
+    },
+
+    /** Dit au processus principal ce qui est affiché, pour qu'il n'envoie pas
+     *  d'avis sur une conversation déjà sous les yeux. */
+    conversationAffichee: (id) => ipcRenderer.send('social:conversationAffichee', id),
   },
 
   majEtat: () => ipcRenderer.invoke('maj:etat'),
