@@ -28,8 +28,10 @@ contextBridge.exposeInMainWorld('ludopia', {
      l'adresse du service : elle demande, le processus principal répond. */
   social: {
     etat: () => ipcRenderer.invoke('social:etat'),
-    inscription: (pseudo, mdp) => ipcRenderer.invoke('social:inscription', pseudo, mdp),
-    connexion: (pseudo, mdp) => ipcRenderer.invoke('social:connexion', pseudo, mdp),
+    inscription: (pseudo, courriel, mdp) =>
+      ipcRenderer.invoke('social:inscription', pseudo, courriel, mdp),
+    connexion: (identifiant, mdp) =>
+      ipcRenderer.invoke('social:connexion', identifiant, mdp),
     deconnexion: () => ipcRenderer.invoke('social:deconnexion'),
 
     amis: () => ipcRenderer.invoke('social:amis'),
@@ -40,6 +42,8 @@ contextBridge.exposeInMainWorld('ludopia', {
     signaler: (id, motif) => ipcRenderer.invoke('social:signaler', id, motif),
 
     messages: (avec, depuis) => ipcRenderer.invoke('social:messages', avec, depuis),
+    attendreMessages: (avec, depuis) =>
+      ipcRenderer.invoke('social:attendreMessages', avec, depuis),
     envoyer: (vers, texte) => ipcRenderer.invoke('social:envoyer', vers, texte),
     marquerLus: (avec) => ipcRenderer.invoke('social:marquerLus', avec),
 
@@ -52,6 +56,7 @@ contextBridge.exposeInMainWorld('ludopia', {
 
   majEtat: () => ipcRenderer.invoke('maj:etat'),
   majChercher: () => ipcRenderer.invoke('maj:chercher'),
+  majInstaller: () => ipcRenderer.invoke('maj:installer'),
 
   /** Suit la recherche, le téléchargement et la disponibilité d'une mise à jour. */
   surMaj: (rappel) => {

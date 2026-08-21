@@ -40,7 +40,7 @@ const TEXTES = {
     lanceur: 'Lanceur',
     majRecherche: 'Recherche d’une mise à jour…',
     majTelechargement: 'Téléchargement',
-    majPrete: 'Mise à jour prête',
+    majPrete: 'Installer la mise à jour',
     majAJour: 'Rechercher une mise à jour',
     majErreur: 'Mise à jour : réessayer',
     accueil: 'Accueil',
@@ -64,7 +64,12 @@ const TEXTES = {
     connexion: 'Se connecter',
     inscription: 'Créer un compte',
     pseudo: 'Pseudo',
+    courriel: 'Adresse e-mail',
+    identifiant: 'Adresse e-mail ou pseudo',
     motDePasse: 'Mot de passe',
+    pseudoAide: 'C’est ce que verront vos amis.',
+    courrielAide: 'Elle sert à vous connecter. Elle n’est jamais montrée à personne.',
+    conversations: 'Conversations',
     dejaCompte: 'J’ai déjà un compte',
     pasDeCompte: 'Créer un compte',
     deconnexion: 'Se déconnecter',
@@ -111,6 +116,8 @@ const TEXTES = {
       delai_depasse: 'Le service met trop de temps à répondre.',
       non_authentifie: 'Votre session a expiré. Reconnectez-vous.',
       trop_d_appels: 'Trop d’essais. Patientez quelques minutes.',
+      courriel_invalide: 'Cette adresse e-mail n’a pas l’air valide.',
+      courriel_pris: 'Un compte utilise déjà cette adresse.',
     },
   },
   en: {
@@ -145,7 +152,7 @@ const TEXTES = {
     lanceur: 'Launcher',
     majRecherche: 'Checking for updates…',
     majTelechargement: 'Downloading',
-    majPrete: 'Update ready',
+    majPrete: 'Install the update',
     majAJour: 'Check for updates',
     majErreur: 'Update check failed — retry',
     accueil: 'Home',
@@ -169,7 +176,12 @@ const TEXTES = {
     connexion: 'Sign in',
     inscription: 'Create an account',
     pseudo: 'Name',
+    courriel: 'Email address',
+    identifiant: 'Email address or name',
     motDePasse: 'Password',
+    pseudoAide: 'This is what your friends will see.',
+    courrielAide: 'Used to sign in. It is never shown to anyone.',
+    conversations: 'Conversations',
     dejaCompte: 'I already have an account',
     pasDeCompte: 'Create an account',
     deconnexion: 'Sign out',
@@ -216,6 +228,8 @@ const TEXTES = {
       delai_depasse: 'The service is taking too long.',
       non_authentifie: 'Your session expired. Sign in again.',
       trop_d_appels: 'Too many attempts. Wait a few minutes.',
+      courriel_invalide: 'That email address does not look valid.',
+      courriel_pris: 'An account already uses that address.',
     },
   },
 };
@@ -518,7 +532,7 @@ function bulle(texte, sorte = 'erreur') {
   return p;
 }
 
-function champ(etiquette, type, nom, autocompletion) {
+function champ(etiquette, type, nom, autocompletion, aide) {
   const bloc = document.createElement('label');
   bloc.className = 'champ';
   const l = document.createElement('span');
@@ -529,6 +543,12 @@ function champ(etiquette, type, nom, autocompletion) {
   i.autocomplete = autocompletion;
   i.spellcheck = false;
   bloc.append(l, i);
+  if (aide) {
+    const a = document.createElement('em');
+    a.className = 'champ-aide';
+    a.textContent = aide;
+    bloc.append(a);
+  }
   return { bloc, entree: i };
 }
 
@@ -553,10 +573,21 @@ function dessinerFormulaire(scene) {
   const form = document.createElement('form');
   form.className = 'formulaire';
 
-  const p = champ(t.pseudo, 'text', 'pseudo', 'username');
+  // À l'inscription on demande les deux : le pseudo est ce que voient les amis,
+  // l'adresse est ce qui identifie le compte. À la connexion un seul champ
+  // suffit — le service reconnaît une adresse à son arobase.
+  const p = inscrire
+    ? champ(t.pseudo, 'text', 'pseudo', 'username', t.pseudoAide)
+    : champ(t.identifiant, 'text', 'identifiant', 'username');
+  const c = inscrire
+    ? champ(t.courriel, 'email', 'courriel', 'email', t.courrielAide)
+    : null;
   const m = champ(t.motDePasse, 'password', 'motDePasse',
     inscrire ? 'new-password' : 'current-password');
-  form.append(p.bloc, m.bloc);
+
+  form.append(p.bloc);
+  if (c) form.append(c.bloc);
+  form.append(m.bloc);
 
   const erreurs = document.createElement('div');
   form.append(erreurs);
@@ -572,8 +603,9 @@ function dessinerFormulaire(scene) {
     erreurs.textContent = '';
     valider.disabled = true;
 
-    const action = inscrire ? window.ludopia.social.inscription : window.ludopia.social.connexion;
-    const r = await action(p.entree.value, m.entree.value);
+    const r = inscrire
+      ? await window.ludopia.social.inscription(p.entree.value, c.entree.value, m.entree.value)
+      : await window.ludopia.social.connexion(p.entree.value, m.entree.value);
     valider.disabled = false;
 
     if (!r.ok) {
@@ -886,6 +918,7 @@ function dessinerConversation(scene) {
     for (const m of etat.messages) {
       const el = document.createElement('div');
       el.className = m.expediteur === etat.social.moi?.id ? 'msg msg--moi' : 'msg';
+      if (m.provisoire) el.classList.add('msg--provisoire');
       const texte = document.createElement('p');
       texte.textContent = m.texte;
       const heure = document.createElement('span');
@@ -916,9 +949,28 @@ function dessinerConversation(scene) {
     const texte = saisie.value.trim();
     if (!texte) return;
     saisie.value = '';
+
+    /* Le message s'affiche avant d'être parti. Attendre la réponse du serveur
+       donnait une demi-seconde de vide après chaque envoi, et c'est
+       exactement ce qui fait qu'une messagerie « traîne ». En cas d'échec la
+       bulle est retirée et l'erreur s'affiche : on ne laisse pas croire qu'un
+       message est parti quand il ne l'est pas. */
+    const provisoire = {
+      id: `provisoire-${Date.now()}`,
+      expediteur: etat.social.moi?.id,
+      destinataire: ami.id,
+      texte,
+      envoye_le: Math.floor(Date.now() / 1000),
+      provisoire: true,
+    };
+    etat.messages = [...etat.messages, provisoire];
+    dessinerAmis();
+
     const r = await window.ludopia.social.envoyer(ami.id, texte);
     if (!r.ok) {
-      fil.append(bulle(messageErreur(r.erreur, r.detail)));
+      etat.messages = etat.messages.filter((x) => x.id !== provisoire.id);
+      dessinerAmis();
+      $('.conv-fil')?.append(bulle(messageErreur(r.erreur, r.detail)));
       return;
     }
     await rafraichirConversation();
@@ -952,6 +1004,7 @@ function dessinerAmis() {
     dessinerListeAmis(scene);
   }
   dessinerRail();
+  dessinerChats();
   scene.scrollTop = 0;
 }
 
@@ -968,6 +1021,7 @@ async function rafraichirConversation() {
 }
 
 async function ouvrirConversation(id) {
+  etat.vue = 'amis';
   etat.conversation = id;
   etat.messages = [];
   dessinerAmis();
@@ -975,6 +1029,72 @@ async function ouvrirConversation(id) {
   await window.ludopia.social.marquerLus(id);
   await rafraichirAmis();
   dessinerAmis();
+  ecouterLesMessages();
+}
+
+/** Deux lettres tirées du pseudo : de vraies photos demanderaient un envoi de
+ *  fichiers, une modération, et un hébergement — pour un gain douteux. */
+function initiales(pseudo) {
+  const mots = pseudo.trim().split(/\s+/).filter(Boolean);
+  if (mots.length >= 2) return (mots[0][0] + mots[1][0]).toUpperCase();
+  return pseudo.trim().slice(0, 2).toUpperCase();
+}
+
+/** Une teinte stable par personne : la même couleur d'une session à l'autre. */
+function teinte(id) {
+  let n = 0;
+  for (let i = 0; i < id.length; i += 1) n = (n * 31 + id.charCodeAt(i)) % 360;
+  return n;
+}
+
+function dessinerChats() {
+  const colonne = $('#chats');
+  if (!colonne) return;
+
+  const liste = etat.social.connecte ? (etat.amis?.amis || []) : [];
+  colonne.hidden = liste.length === 0;
+  document.body.classList.toggle('avec-chats', liste.length > 0);
+  if (!liste.length) return;
+
+  colonne.textContent = '';
+
+  const titre = document.createElement('p');
+  titre.className = 'chats-titre';
+  titre.textContent = T().conversations;
+  colonne.append(titre);
+
+  // Les personnes en ligne d'abord, puis celles qui ont écrit sans réponse.
+  const ordonnes = [...liste].sort(
+    (x, y) => (y.nonLus || 0) - (x.nonLus || 0)
+           || Number(Boolean(y.jeu)) - Number(Boolean(x.jeu))
+           || Number(y.enLigne) - Number(x.enLigne),
+  );
+
+  for (const a of ordonnes) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'chat-pastille';
+    b.title = a.pseudo;
+    b.setAttribute('aria-label', a.pseudo);
+    b.dataset.etat = a.jeu ? 'joue' : a.enLigne ? 'en-ligne' : 'hors';
+    b.setAttribute('aria-current', String(etat.conversation === a.id));
+    b.style.setProperty('--teinte', teinte(a.id));
+
+    const rond = document.createElement('span');
+    rond.className = 'chat-rond';
+    rond.textContent = initiales(a.pseudo);
+    b.append(rond);
+
+    if (a.nonLus) {
+      const n = document.createElement('b');
+      n.className = 'chat-non-lus';
+      n.textContent = a.nonLus > 9 ? '9+' : String(a.nonLus);
+      b.append(n);
+    }
+
+    b.addEventListener('click', () => ouvrirConversation(a.id));
+    colonne.append(b);
+  }
 }
 
 function ouvrirAmis() {
@@ -982,7 +1102,10 @@ function ouvrirAmis() {
   etat.conversation = null;
   dessinerAmis();
   if (etat.social.connecte) {
-    rafraichirAmis().then(() => { if (etat.vue === 'amis') dessinerAmis(); });
+    rafraichirAmis().then(() => {
+      dessinerChats();
+      if (etat.vue === 'amis') dessinerAmis();
+    });
   }
 }
 
@@ -992,27 +1115,70 @@ function ouvrirAmis() {
  * se compte en secondes — et on se calme le reste du temps.
  */
 let horlogeSociale = null;
+let attenteEnCours = false;
+
+/**
+ * Deux rythmes distincts.
+ *
+ * Les messages n'attendent pas d'horloge : une requête reste ouverte jusqu'à
+ * l'arrivée du prochain, puis se relance aussitôt. Un message apparaît donc
+ * en une fraction de seconde au lieu d'attendre le prochain battement.
+ *
+ * La présence des amis, elle, n'a pas besoin d'être instantanée — mais voir un
+ * ami lancer un jeu dix secondes après coup se remarque. Six secondes est le
+ * compromis : assez vif pour paraître vivant, assez espacé pour ne pas
+ * solliciter le service en continu.
+ */
+async function ecouterLesMessages() {
+  if (attenteEnCours) return;
+  attenteEnCours = true;
+
+  try {
+    while (etat.social.connecte && etat.conversation) {
+      const dernier = etat.messages
+        .filter((m) => !m.provisoire)
+        .reduce((n, m) => Math.max(n, Number(m.id) || 0), 0);
+      const avec = etat.conversation;
+
+      const r = await window.ludopia.social.attendreMessages(avec, dernier);
+
+      // La conversation a changé pendant l'attente : la réponse ne vaut plus.
+      if (etat.conversation !== avec) break;
+
+      if (r.ok && (r.donnees.messages || []).length) {
+        const connus = new Set(etat.messages.map((m) => String(m.id)));
+        const neufs = r.donnees.messages.filter((m) => !connus.has(String(m.id)));
+        if (neufs.length) {
+          // On retire les bulles provisoires que le serveur vient de confirmer.
+          etat.messages = [...etat.messages.filter((m) => !m.provisoire), ...neufs];
+          dessinerAmis();
+          await window.ludopia.social.marquerLus(avec);
+        }
+      } else if (!r.ok && r.erreur !== 'delai_depasse') {
+        // Réseau coupé : on souffle avant de réessayer, plutôt que de boucler.
+        await new Promise((f) => setTimeout(f, 3000));
+      }
+    }
+  } finally {
+    attenteEnCours = false;
+  }
+}
+
 function suivreLeSocial() {
   clearInterval(horlogeSociale);
   horlogeSociale = setInterval(async () => {
     if (!etat.social.connecte) return;
-
-    if (etat.vue === 'amis' && etat.conversation) {
-      const avant = etat.messages.length;
-      await rafraichirConversation();
-      await window.ludopia.social.marquerLus(etat.conversation);
-      if (etat.messages.length !== avant) dessinerAmis();
-      return;
-    }
 
     const avant = JSON.stringify(etat.amis?.amis?.map((a) => [a.enLigne, a.jeu, a.nonLus]));
     await rafraichirAmis();
     const apres = JSON.stringify(etat.amis?.amis?.map((a) => [a.enLigne, a.jeu, a.nonLus]));
     if (avant !== apres) {
       dessinerRail();
-      if (etat.vue === 'amis') dessinerAmis();
+      dessinerChats();
+      if (etat.vue === 'amis' && !etat.conversation) dessinerAmis();
+      else if (etat.vue === 'accueil') dessinerAccueil();
     }
-  }, 5000);
+  }, 6000);
 }
 
 /** Total des messages non lus, pour la pastille du rail. */
@@ -1239,9 +1405,10 @@ function choisir(id) {
   dessinerScene();
 }
 
-/** Redessine la vue courante — accueil ou fiche de jeu. */
+/** Redessine la vue courante — accueil, amis ou fiche de jeu. */
 function redessiner() {
   dessinerRail();
+  dessinerChats();
   if (etat.vue === 'accueil') dessinerAccueil();
   else if (etat.vue === 'amis') dessinerAmis();
   else dessinerScene();
@@ -1351,7 +1518,8 @@ async function demarrer() {
     if (e.connecte) {
       await rafraichirAmis();
       dessinerRail();
-      if (etat.vue === 'amis') dessinerAmis();
+      dessinerChats();
+      if (etat.vue === 'accueil') dessinerAccueil();
     }
     suivreLeSocial();
   });
@@ -1359,9 +1527,11 @@ async function demarrer() {
   window.ludopia.social.surChangement(async (e) => {
     etat.social = e;
     if (e.connecte) await rafraichirAmis();
-    else etat.amis = null;
+    else { etat.amis = null; etat.conversation = null; }
     dessinerRail();
+    dessinerChats();
     if (etat.vue === 'amis') dessinerAmis();
+    else if (etat.vue === 'accueil') dessinerAccueil();
   });
 
   // Les nouvelles arrivent du site : la page s'affiche sans les attendre.
@@ -1400,7 +1570,13 @@ async function demarrer() {
 
   window.ludopia.surMaj(dessinerMaj);
   window.ludopia.majEtat().then(dessinerMaj);
-  $('#maj')?.addEventListener('click', () => window.ludopia.majChercher());
+  // Quand la mise à jour est prête, le bouton doit l'installer. Il relançait
+  // une recherche : l'utilisateur cliquait sur « Mise à jour prête » et rien
+  // ne se passait.
+  $('#maj')?.addEventListener('click', () => {
+    if ($('#maj').dataset.phase === 'prete') window.ludopia.majInstaller();
+    else window.ludopia.majChercher();
+  });
 
   $('[data-langue]').addEventListener('click', async () => {
     etat.langue = etat.langue === 'fr' ? 'en' : 'fr';

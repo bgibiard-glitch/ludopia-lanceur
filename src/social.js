@@ -165,25 +165,26 @@ function signalerJeu(id) {
 // Verbes exposés à l'interface
 // =============================================================================
 
-async function inscription(pseudo, motDePasse, machine) {
+function profilDe(d) {
+  return { id: d.id, pseudo: d.pseudo, courriel: d.courriel || null, codeAmi: d.codeAmi };
+}
+
+async function inscription(pseudo, courriel, motDePasse, machine) {
   const r = await appel('POST', '/compte', {
-    avecJeton: false, corps: { pseudo, motDePasse, machine },
+    avecJeton: false, corps: { pseudo, courriel, motDePasse, machine },
   });
   if (!r.ok) return r;
-  retenirSession(r.donnees.jeton, {
-    id: r.donnees.id, pseudo: r.donnees.pseudo, codeAmi: r.donnees.codeAmi,
-  });
+  retenirSession(r.donnees.jeton, profilDe(r.donnees));
   return { ok: true, donnees: moi };
 }
 
-async function connexion(pseudo, motDePasse, machine) {
+/** `identifiant` est l'adresse ou le pseudo : le service distingue les deux. */
+async function connexion(identifiant, motDePasse, machine) {
   const r = await appel('POST', '/session', {
-    avecJeton: false, corps: { pseudo, motDePasse, machine },
+    avecJeton: false, corps: { identifiant, motDePasse, machine },
   });
   if (!r.ok) return r;
-  retenirSession(r.donnees.jeton, {
-    id: r.donnees.id, pseudo: r.donnees.pseudo, codeAmi: r.donnees.codeAmi,
-  });
+  retenirSession(r.donnees.jeton, profilDe(r.donnees));
   return { ok: true, donnees: moi };
 }
 
@@ -211,6 +212,16 @@ module.exports = {
 
   messages: (avec, depuis = 0) => appel(
     'GET', `/messages?avec=${encodeURIComponent(avec)}&depuis=${depuis}`,
+  ),
+
+  /* Attente longue : la requête ne rend la main qu'à l'arrivée d'un message,
+     ou au bout de vingt-cinq secondes. Interroger périodiquement donnait une
+     conversation qui traîne — jusqu'à cinq secondes avant qu'un message
+     n'apparaisse, ce qui se sent tout de suite. Le délai client doit dépasser
+     celui du serveur, sinon on abandonne juste avant sa réponse. */
+  attendreMessages: (avec, depuis) => appel(
+    'GET', `/messages?avec=${encodeURIComponent(avec)}&depuis=${depuis}&attendre=1`,
+    { delai: 32000 },
   ),
   envoyer: (vers, texte) => appel('POST', '/messages', { corps: { vers, texte } }),
   marquerLus: (avec) => appel('POST', '/messages/lus', { corps: { avec } }),

@@ -488,10 +488,12 @@ function brancherIpc() {
 
   // --- service social ---
   ipcMain.handle('social:etat', () => social.etat());
-  ipcMain.handle('social:inscription', (_e, pseudo, mdp) =>
-    social.inscription(pseudo, mdp, `${process.platform} ${require('node:os').hostname()}`));
-  ipcMain.handle('social:connexion', (_e, pseudo, mdp) =>
-    social.connexion(pseudo, mdp, `${process.platform} ${require('node:os').hostname()}`));
+  ipcMain.handle('social:inscription', (_e, pseudo, courriel, mdp) =>
+    social.inscription(pseudo, courriel, mdp,
+      `${process.platform} ${require('node:os').hostname()}`));
+  ipcMain.handle('social:connexion', (_e, identifiant, mdp) =>
+    social.connexion(identifiant, mdp,
+      `${process.platform} ${require('node:os').hostname()}`));
   ipcMain.handle('social:deconnexion', () => social.deconnexion());
 
   ipcMain.handle('social:amis', () => social.amis());
@@ -502,11 +504,14 @@ function brancherIpc() {
   ipcMain.handle('social:signaler', (_e, id, motif) => social.signaler(id, motif));
 
   ipcMain.handle('social:messages', (_e, avec, depuis) => social.messages(avec, depuis));
+  ipcMain.handle('social:attendreMessages', (_e, avec, depuis) =>
+    social.attendreMessages(avec, depuis));
   ipcMain.handle('social:envoyer', (_e, vers, texte) => social.envoyer(vers, texte));
   ipcMain.handle('social:marquerLus', (_e, avec) => social.marquerLus(avec));
 
   ipcMain.handle('maj:etat', () => ({ ...maj.etat(), disponible: maj.disponible() }));
   ipcMain.handle('maj:chercher', () => maj.chercher(true, fenetreBibliotheque));
+  ipcMain.handle('maj:installer', () => maj.installer());
 
   ipcMain.handle('catalogue:rafraichir', async () => {
     catalogue = fusionner(catalogueLocal(), await catalogueDistant());
@@ -542,6 +547,7 @@ app.whenReady().then(async () => {
   creerMenu();
   creerBibliotheque();
   creerPlateau();
+  maj.retenirFenetre(fenetreBibliotheque);
   maj.surveiller();
 
   // Le catalogue distant arrive après coup : la bibliothèque s'affiche tout de

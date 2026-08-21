@@ -3,11 +3,14 @@
 /**
  * Mise à jour du lanceur, depuis le lanceur.
  *
- * Le flux est le dépôt public `bgibiard-glitch/ludopia-lanceur` : chaque
- * release y publie un `latest.yml` qu'`electron-updater` compare à la version
- * installée. Le téléchargement se fait en tâche de fond ; l'installation
- * attend l'accord de l'utilisateur, car elle redémarre l'application — la
- * faire au milieu d'une partie serait inacceptable.
+ * Le flux est servi par le service Ludopia lui-même — `…/maj/latest.yml` — qui
+ * relaie les releases. Le lanceur ne parle donc à aucun domaine tiers : un
+ * réseau qui bloque github.com n'empêche pas les mises à jour, et changer
+ * d'hébergement de binaires ne demandera pas de republier une version.
+ *
+ * Le téléchargement se fait en tâche de fond ; l'installation attend l'accord
+ * de l'utilisateur, car elle redémarre l'application — la faire au milieu
+ * d'une partie serait inacceptable.
  *
  * Sur macOS, une mise à jour automatique exige une application **signée**.
  * Tant qu'elle ne l'est pas, on n'essaie même pas : `autoUpdater` échouerait
@@ -16,12 +19,16 @@
 
 const { app, dialog, shell } = require('electron');
 
-const DEPOT = 'https://github.com/bgibiard-glitch/ludopia-lanceur/releases/latest';
+/* Le repli quand la mise à jour automatique n'est pas possible — développement,
+   macOS non signé. On envoie vers la page de téléchargement du studio, pas vers
+   le dépôt : c'est elle qui présente les versions disponibles. */
+const REPLI = 'https://ludopia.fr/telecharger';
 
 let updater = null;
 let etat = { phase: 'inconnu', version: null, progression: 0, erreur: null };
 let prevenir = () => {};
 let fenetreDemandeuse = null;
+let fenetrePrincipale = null;
 
 /** Chargé à la demande : inutile d'embarquer le module en développement. */
 function charger() {
@@ -67,7 +74,18 @@ function brancher() {
 
 async function proposerInstallation(version) {
   const fr = app.getLocale().startsWith('fr');
-  const r = await dialog.showMessageBox(fenetreDemandeuse ?? undefined, {
+
+  /* La vérification discrète du démarrage n'était rattachée à aucune fenêtre :
+     son dialogue pouvait s'ouvrir derrière la bibliothèque, et l'utilisateur
+     ne voyait rien. On l'accroche donc à la fenêtre principale, et on la
+     ramène au premier plan avant de demander quoi que ce soit. */
+  const fenetre = fenetreDemandeuse || fenetrePrincipale;
+  if (fenetre && !fenetre.isDestroyed()) {
+    if (fenetre.isMinimized()) fenetre.restore();
+    fenetre.show();
+  }
+
+  const r = await dialog.showMessageBox(fenetre ?? undefined, {
     type: 'info',
     buttons: fr ? ['Redémarrer et installer', 'Plus tard'] : ['Restart and install', 'Later'],
     defaultId: 0,
@@ -80,10 +98,17 @@ async function proposerInstallation(version) {
       : 'Installing closes the launcher and reopens it. Any game in progress will be interrupted.',
   });
   if (r.response === 0) {
-    // `isSilent` à false : l'installateur montre sa progression, ce qui vaut
-    // mieux qu'une fenêtre qui disparaît sans explication.
-    updater.quitAndInstall(false, true);
+    installer();
   }
+}
+
+/** Redémarre et applique la mise à jour déjà téléchargée. */
+function installer() {
+  if (etat.phase !== 'prete' || !updater) return false;
+  // `isSilent` à false : l'installateur montre sa progression, ce qui vaut
+  // mieux qu'une fenêtre qui disparaît sans explication.
+  updater.quitAndInstall(false, true);
+  return true;
 }
 
 /**
@@ -128,7 +153,12 @@ async function chercher(manuelle = false, fenetre = null) {
 }
 
 function ouvrirLesReleases() {
-  shell.openExternal(DEPOT);
+  shell.openExternal(REPLI);
+}
+
+/** La fenêtre à laquelle accrocher les dialogues de la vérification discrète. */
+function retenirFenetre(fenetre) {
+  fenetrePrincipale = fenetre;
 }
 
 /** Vérification discrète au démarrage, puis une fois par jour. */
@@ -141,6 +171,8 @@ function surveiller() {
 
 module.exports = {
   brancher,
+  installer,
+  retenirFenetre,
   chercher,
   surveiller,
   ouvrirLesReleases,
