@@ -131,6 +131,13 @@ const TEXTES = {
     serieAlui: (n) => `Série de ${n} jour${n > 1 ? 's' : ''} en péril : il manque votre ami aujourd’hui.`,
     boutique: 'Boutique',
     editerProfil: 'Personnaliser',
+    offrirLudos: 'Offrir des Ludos',
+    offrirCombien: 'Combien ?',
+    offrirMot: 'Un petit mot (facultatif)',
+    offrirEnvoyer: 'Offrir',
+    offrirFait: (n, qui) => `${n} Ⱡ offerts à ${qui} !`,
+    bloquerSur: 'Bloquer, vraiment ?',
+    signalerEnvoi: 'Envoyer le signalement',
     bioTitre: 'Deux lignes sur vous',
     accentTitre: 'Votre couleur',
     banniereTitre: 'Votre bannière',
@@ -331,6 +338,13 @@ const TEXTES = {
     serieAlui: (n) => `${n}-day streak at risk: your friend has not played today.`,
     boutique: 'Shop',
     editerProfil: 'Customise',
+    offrirLudos: 'Gift Ludos',
+    offrirCombien: 'How many?',
+    offrirMot: 'A little note (optional)',
+    offrirEnvoyer: 'Gift',
+    offrirFait: (n, qui) => `${n} Ⱡ gifted to ${qui}!`,
+    bloquerSur: 'Block, really?',
+    signalerEnvoi: 'Send the report',
     bioTitre: 'Two lines about you',
     accentTitre: 'Your colour',
     banniereTitre: 'Your banner',
@@ -986,7 +1000,17 @@ function dessinerSalon() {
   partir.className = 'btn-mini';
   partir.textContent = t.quitterSalon;
   partir.addEventListener('click', async () => {
-    if (!window.confirm(t.confirmerQuitter)) return;
+    // Deux clics sur le même bouton plutôt qu'un dialogue natif, qui gèle le
+    // rendu d'Electron.
+    if (partir.dataset.sur !== '1') {
+      partir.dataset.sur = '1';
+      partir.textContent = `${t.quitterSalon} ?`;
+      setTimeout(() => {
+        partir.dataset.sur = '';
+        partir.textContent = t.quitterSalon;
+      }, 3000);
+      return;
+    }
     await window.ludopia.social.quitterSalon(salon.id);
     etat.salon = null;
     await rafraichirSalons();
@@ -1297,6 +1321,121 @@ function dessinerProfil() {
   document.body.append(voile);
 }
 
+
+// =============================================================================
+// Offrir des Ludos, signaler — de petites boîtes en place
+// =============================================================================
+
+/** Une boîte modale minimale, détruite au clic hors d'elle. */
+function boite() {
+  const ancien = $('.voile');
+  if (ancien) ancien.remove();
+  const voile = document.createElement('div');
+  voile.className = 'voile';
+  voile.addEventListener('click', (evt) => { if (evt.target === voile) voile.remove(); });
+  const carte = document.createElement('div');
+  carte.className = 'profil profil--edition';
+  carte.setAttribute('role', 'dialog');
+  carte.setAttribute('aria-modal', 'true');
+  const fermer = document.createElement('button');
+  fermer.type = 'button';
+  fermer.className = 'profil-fermer';
+  fermer.textContent = '✕';
+  fermer.addEventListener('click', () => voile.remove());
+  carte.append(fermer);
+  voile.append(carte);
+  document.body.append(voile);
+  return { voile, carte };
+}
+
+function ouvrirDon(ami) {
+  const t = T();
+  const { voile, carte } = boite();
+
+  const h2 = document.createElement('h2');
+  h2.textContent = `💝 ${t.offrirLudos}`;
+  carte.append(h2);
+
+  const qui = document.createElement('p');
+  qui.className = 'profil-statut';
+  qui.textContent = ami.pseudo;
+  carte.append(qui);
+
+  const montant = document.createElement('input');
+  montant.type = 'number';
+  montant.min = '1';
+  montant.max = '500';
+  montant.value = '50';
+  montant.className = 'profil-bio-champ';
+  montant.setAttribute('aria-label', t.offrirCombien);
+  carte.append(montant);
+
+  const mot = document.createElement('input');
+  mot.type = 'text';
+  mot.maxLength = 80;
+  mot.placeholder = t.offrirMot;
+  mot.className = 'profil-bio-champ';
+  carte.append(mot);
+
+  const retour = document.createElement('div');
+  carte.append(retour);
+
+  const ok = document.createElement('button');
+  ok.type = 'button';
+  ok.className = 'jouer jouer--mini';
+  ok.textContent = t.offrirEnvoyer;
+  ok.addEventListener('click', async () => {
+    retour.textContent = '';
+    ok.disabled = true;
+    const n = Math.floor(Number(montant.value));
+    const r = await window.ludopia.bourse.offrir(ami.id, n, mot.value);
+    ok.disabled = false;
+    if (!r.ok) { retour.append(bulle(messageErreur(r.erreur, r.detail))); return; }
+    retour.append(bulle(t.offrirFait(n, ami.pseudo), 'calme'));
+    setTimeout(() => voile.remove(), 1400);
+  });
+  carte.append(ok);
+}
+
+function ouvrirSignalement(ami) {
+  const t = T();
+  const { voile, carte } = boite();
+
+  const h2 = document.createElement('h2');
+  h2.textContent = t.signalerAmi;
+  carte.append(h2);
+
+  const qui = document.createElement('p');
+  qui.className = 'profil-statut';
+  qui.textContent = ami.pseudo;
+  carte.append(qui);
+
+  const motif = document.createElement('textarea');
+  motif.className = 'profil-bio-champ';
+  motif.rows = 3;
+  motif.maxLength = 400;
+  motif.placeholder = t.motifSignalement;
+  carte.append(motif);
+
+  const retour = document.createElement('div');
+  carte.append(retour);
+
+  const ok = document.createElement('button');
+  ok.type = 'button';
+  ok.className = 'btn-mini btn-mini--danger';
+  ok.textContent = t.signalerEnvoi;
+  ok.addEventListener('click', async () => {
+    retour.textContent = '';
+    ok.disabled = true;
+    const r = await window.ludopia.social.signaler(ami.id, motif.value);
+    ok.disabled = false;
+    if (!r.ok) { retour.append(bulle(messageErreur(r.erreur, r.detail))); return; }
+    retour.append(bulle(t.signalementEnvoye, 'calme'));
+    await rafraichirAmis();
+    setTimeout(() => { voile.remove(); dessinerAmis(); }, 1400);
+  });
+  carte.append(ok);
+}
 
 // =============================================================================
 // Édition de sa fiche
@@ -1989,10 +2128,11 @@ function carteAmi(ami, actions) {
   barre.className = 'ami-actions';
   for (const [libelle, sorte, action] of actions) {
     const b = document.createElement('button');
+    b.dataset.libelle = libelle;
     b.type = 'button';
     b.className = sorte === 'principal' ? 'btn-mini btn-mini--fort' : 'btn-mini';
     b.textContent = libelle;
-    b.addEventListener('click', action);
+    b.addEventListener('click', () => action(b));
     barre.append(b);
   }
   el.append(barre);
@@ -2175,20 +2315,26 @@ function dessinerListeAmis(scene) {
 
       actions.push(
         [t.voirProfil, 'discret', () => ouvrirProfil(a.id)],
-        [t.bloquerAmi, 'discret', async () => {
-          if (!window.confirm(t.confirmerBlocage)) return;
+        [`💝 ${t.offrirLudos}`, 'discret', () => ouvrirDon(a)],
+        /* Plus aucun dialogue natif ici : window.confirm/prompt/alert gèlent
+           le processus de rendu d'Electron — le même défaut qui avait figé le
+           lanceur une première fois. La confirmation se fait en deux clics
+           sur le même bouton, le motif dans un champ en place. */
+        [t.bloquerAmi, 'discret', async (bouton) => {
+          if (bouton && bouton.dataset.sur !== '1') {
+            bouton.dataset.sur = '1';
+            bouton.textContent = t.bloquerSur;
+            setTimeout(() => {
+              bouton.dataset.sur = '';
+              bouton.textContent = t.bloquerAmi;
+            }, 3000);
+            return;
+          }
           await window.ludopia.social.bloquer(a.id, true);
           await rafraichirAmis();
           dessinerAmis();
         }],
-        [t.signalerAmi, 'discret', async () => {
-          const motif = window.prompt(t.motifSignalement);
-          if (motif === null) return;
-          await window.ludopia.social.signaler(a.id, motif);
-          await rafraichirAmis();
-          dessinerAmis();
-          window.alert(t.signalementEnvoye);
-        }],
+        [t.signalerAmi, 'discret', () => ouvrirSignalement(a)],
       );
       liste.append(carteAmi(a, actions));
     }
