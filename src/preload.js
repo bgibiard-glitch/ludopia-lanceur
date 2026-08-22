@@ -112,6 +112,15 @@ contextBridge.exposeInMainWorld('ludopia', {
   /* Le mode audio. La négociation passe par le processus principal, mais la
      connexion elle-même vit dans l'interface : c'est là que se trouvent
      RTCPeerConnection et le micro. */
+  theme: {
+    etat: () => ipcRenderer.invoke('theme:etat'),
+    surChangement: (rappel) => {
+      const ecouteur = (_evt, t) => rappel(t);
+      ipcRenderer.on('theme:changement', ecouteur);
+      return () => ipcRenderer.removeListener('theme:changement', ecouteur);
+    },
+  },
+
   voix: {
     glace: () => ipcRenderer.invoke('voix:glace'),
     appeler: (vers) => ipcRenderer.invoke('voix:appeler', vers),

@@ -9,7 +9,9 @@
  * système, jamais dans la fenêtre.
  */
 
-const { app, BrowserWindow, shell, ipcMain, Menu, Tray, nativeImage, net, dialog } = require('electron');
+const {
+  app, BrowserWindow, shell, ipcMain, Menu, Tray, nativeImage, net, dialog, nativeTheme,
+} = require('electron');
 const path = require('node:path');
 const fs = require('node:fs');
 const donnees = require('./donnees');
@@ -27,12 +29,56 @@ const REGLAGES_DEFAUT = {
   avisMessages: true,
   avisSalons: true,
   avisInvitations: true,
+  avisAppels: true,
   son: true,
   demarrerReduit: false,
+  /* 'systeme' | 'sombre' | 'clair'. Le défaut suit le système : quelqu'un qui a
+     réglé son ordinateur en clair n'a pas envie qu'une application décide
+     seule du contraire, et l'inverse est vrai aussi. */
+  theme: 'systeme',
+  /* La surimpression : un tchat déplaçable au-dessus du jeu. Éteinte au
+     départ — une fenêtre qui s'invite par-dessus une partie sans qu'on l'ait
+     demandée est une fenêtre qu'on désinstalle. */
+  surimpression: false,
 };
 
 function reglages() {
   return { ...REGLAGES_DEFAUT, ...(donnees.get('reglages') || {}) };
+}
+
+/**
+ * Les couleurs de la barre de titre, qui n'est pas dessinée par nous.
+ *
+ * Windows la peint lui-même à partir de ces valeurs. Une barre restée sombre
+ * au-dessus d'une interface claire est le genre de détail qui fait qu'une
+ * application « ne fait pas fini », et l'on ne sait pas dire pourquoi.
+ */
+/** Répercute le thème sur la barre de titre et sur l'interface. */
+function appliquerTheme() {
+  if (!fenetreBibliotheque || fenetreBibliotheque.isDestroyed()) return;
+  if (process.platform !== 'darwin') {
+    try { fenetreBibliotheque.setTitleBarOverlay(couleursBarre()); } catch { /* pas supporté */ }
+  }
+  fenetreBibliotheque.webContents.send('theme:changement', {
+    choisi: reglages().theme,
+    effectif: themeEffectif(),
+  });
+}
+
+function couleursBarre() {
+  const clair = themeEffectif() === 'clair';
+  return {
+    color: clair ? '#ffffff' : '#06060f',
+    symbolColor: clair ? '#3b3b5e' : '#c5c2e6',
+    height: 44,
+  };
+}
+
+/** Ce que « systeme » veut dire ici et maintenant. */
+function themeEffectif() {
+  const choisi = reglages().theme;
+  if (choisi === 'clair' || choisi === 'sombre') return choisi;
+  return nativeTheme.shouldUseDarkColors ? 'sombre' : 'clair';
 }
 const SITE = 'https://ludopia.fr';
 // Servi depuis `assets/` et non `/lanceur/` : le dossier `lanceur/` du dépôt
@@ -178,11 +224,7 @@ function creerBibliotheque() {
     title: 'Ludopia',
     icon: iconeApplication(),
     titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'hidden',
-    titleBarOverlay: process.platform === 'darwin' ? false : {
-      color: '#06060f',
-      symbolColor: '#c5c2e6',
-      height: 44,
-    },
+    titleBarOverlay: process.platform === 'darwin' ? false : couleursBarre(),
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
@@ -545,6 +587,7 @@ function brancherIpc() {
   ipcMain.handle('reglages:definir', (_e, valeurs) => {
     donnees.set('reglages', { ...reglages(), ...valeurs });
     avis.reglages(reglages());
+    if ('theme' in valeurs) appliquerTheme();
     return reglages();
   });
   ipcMain.handle('donnees:dossier', () => app.getPath('userData'));
@@ -603,6 +646,19 @@ function brancherIpc() {
   ipcMain.handle('social:envoyer', (_e, vers, texte) => social.envoyer(vers, texte));
 
   // --- le mode audio ---
+  ipcMain.handle('theme:etat', () => ({
+    choisi: reglages().theme,
+    effectif: themeEffectif(),
+  }));
+
+  /* Le système peut basculer pendant qu'on est ouvert — au coucher du soleil,
+     sur les réglages automatiques de Windows. Rester sur l'ancien thème
+     jusqu'au prochain démarrage se remarque tout de suite. */
+  nativeTheme.on('updated', () => {
+    if (reglages().theme !== 'systeme') return;
+    appliquerTheme();
+  });
+
   ipcMain.handle('voix:glace', () => social.glace());
   ipcMain.handle('voix:appeler', (_e, vers) => social.appelerVoix(vers));
   ipcMain.handle('voix:repondre', (_e, id, accepte) => social.repondreVoix(id, accepte));

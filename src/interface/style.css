@@ -46,6 +46,51 @@
   --font-display: 'Outfit', 'Segoe UI', system-ui, sans-serif;
   --font-body: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
   --ease: cubic-bezier(0.22, 1, 0.36, 1);
+
+  /* Les surfaces nommées, employées par les écrans récents. Elles existent
+     surtout pour que le thème clair ait un seul endroit à redéfinir. */
+  /* La teinte des voiles : le calque semi-opaque posé sur une image ou sous une
+     barre. En sombre il fonce, en clair il éclaircit — sans quoi une barre
+     restée noire flotterait au-dessus d'une interface blanche. */
+  --voile: 6, 6, 15;
+
+  --carte: var(--bg-3);
+  --carte2: var(--bg-2);
+  --trait: var(--line);
+  --gris: var(--muted);
+  --vert: #2ee6a8;
+  --or: #ffb020;
+  --rouge: #ff5c7a;
+}
+
+/* =============================================================================
+   THÈME CLAIR
+   Ce n'est pas le thème sombre inversé. Un blanc pur derrière du texte foncé
+   fatigue en quelques minutes, et les mêmes accents saturés qui brillent sur du
+   noir deviennent illisibles sur du blanc : le violet de marque est assombri,
+   les transparences sont recalculées vers le sombre au lieu du clair.
+   ========================================================================== */
+:root[data-theme="clair"] {
+  --bg: #f4f4fa;
+  --bg-2: #ffffff;
+  --bg-3: #ebebf5;
+  --surface: rgba(16, 16, 44, 0.04);
+  --surface-2: rgba(16, 16, 44, 0.08);
+  --line: rgba(16, 16, 44, 0.12);
+  --line-strong: rgba(16, 16, 44, 0.28);
+
+  --ink: #15152c;
+  --ink-dim: #3b3b5e;
+  --muted: #676789;
+
+  --brand: #6340e0;
+  --accent-ink: #ffffff;
+
+  --vert: #12a06f;
+  --or: #b57400;
+  --rouge: #d43a5c;
+
+  --voile: 255, 255, 255;
 }
 
 * {
@@ -104,7 +149,7 @@ button {
   align-items: center;
   justify-content: space-between;
   padding: 0 12px 0 16px;
-  background: rgba(6, 6, 15, 0.86);
+  background: rgba(var(--voile), 0.86);
   border-bottom: 1px solid var(--line);
   backdrop-filter: blur(14px);
   z-index: 20;
@@ -383,7 +428,13 @@ body:not(.mac) .barre {
 
 /* Sans ce voile, le titre passerait sur n'importe quelle zone claire de la
    capture. Il reste plus léger qu'avant : le fond est déjà assombri par son
-   propre filtre, et deux assombrissements cumulés donneraient un rectangle noir. */
+   propre filtre, et deux assombrissements cumulés donneraient un rectangle noir.
+
+   Il ne suit pas le thème, et c'est délibéré. Les captures de jeu sont des
+   images sombres et saturées ; un voile clair les délaverait sans rendre le
+   texte plus lisible pour autant. L'affiche redéfinit donc ses propres encres
+   en clair — voir `.affiche, .reprise` plus bas — pour rester lisible sur un
+   fond qui, lui, reste sombre. */
 .affiche::after {
   content: '';
   position: absolute;
@@ -392,6 +443,24 @@ body:not(.mac) .barre {
   background:
     linear-gradient(180deg, rgba(6, 6, 15, 0.34) 0%, rgba(6, 6, 15, 0.62) 48%, var(--bg) 100%),
     radial-gradient(120% 90% at 8% 100%, color-mix(in srgb, var(--accent) 30%, transparent), transparent 62%);
+}
+
+/* Les blocs posés sur une image gardent leurs encres claires même en thème
+   clair : le fond sous eux reste sombre, et un texte foncé y disparaîtrait. */
+.affiche,
+.reprise {
+  --ink: #f5f4ff;
+  --ink-dim: #d7d4f2;
+  --muted: #b3b0d4;
+  --line: rgba(255, 255, 255, 0.16);
+  --surface: rgba(255, 255, 255, 0.08);
+  --surface-2: rgba(255, 255, 255, 0.14);
+  /* Indispensable, et pas évident : `color` est héritée sous sa forme
+     *calculée*. Le corps de la page a déjà résolu `var(--ink)` avec la valeur
+     du thème ; redéfinir la variable ici ne change rien à ce qui est hérité.
+     Il faut réappliquer la propriété pour qu'elle se recalcule. Sans cette
+     ligne, le titre de la carte restait noir sur noir. */
+  color: var(--ink);
 }
 
 .affiche--nu {
@@ -1941,8 +2010,8 @@ body.avec-chats .cadre {
   align-items: center;
   gap: 0.8rem;
   padding: 0.8rem 1rem;
-  background: var(--carte, #14141f);
-  border: 1px solid var(--trait, #262635);
+  background: var(--carte);
+  border: 1px solid var(--trait);
   border-radius: 14px;
   box-shadow: 0 18px 44px rgba(0, 0, 0, 0.55);
 }
@@ -1985,16 +2054,16 @@ body.avec-chats .cadre {
   font: inherit;
   font-size: 0.86rem;
   border-radius: 10px;
-  border: 1px solid var(--trait, #262635);
-  background: var(--carte2, #1b1b28);
+  border: 1px solid var(--trait);
+  background: var(--carte2);
   color: inherit;
   cursor: pointer;
   transition: background 0.15s ease, border-color 0.15s ease;
 }
 
 .voix-oui {
-  background: #2ee6a8;
-  border-color: #2ee6a8;
+  background: var(--vert);
+  border-color: var(--vert);
   color: #08131a;
   font-weight: 600;
 }
@@ -2005,13 +2074,13 @@ body.avec-chats .cadre {
 
 .voix-fin {
   flex: 0 0 auto;
-  border-color: #ff5c7a;
-  color: #ff5c7a;
+  border-color: var(--rouge);
+  color: var(--rouge);
 }
 .voix-fin:hover { background: rgba(255, 92, 122, 0.14); }
 
 .voix-mini { flex: 0 0 auto; }
-.voix-mini--actif { border-color: #ffb020; color: #ffb020; }
+.voix-mini--actif { border-color: var(--or); color: var(--or); }
 
 /* La barre d'appel en cours : en bas à droite, hors du chemin de la lecture. */
 .voix-barre {
@@ -2023,7 +2092,7 @@ body.avec-chats .cadre {
 .voix-barre .voix-qui { font-weight: 600; }
 
 .voix-sous {
-  color: var(--gris, #9a9ab0);
+  color: var(--gris);
   font-size: 0.82rem;
   font-variant-numeric: tabular-nums;
   margin-right: auto;
@@ -2035,15 +2104,15 @@ body.avec-chats .cadre {
   height: 9px;
   flex: 0 0 auto;
   border-radius: 50%;
-  background: var(--gris, #9a9ab0);
+  background: var(--gris);
 }
 .voix-point[data-etat="prepare"],
 .voix-point[data-etat="sonne"],
 .voix-point[data-etat="connexion"] {
-  background: #ffb020;
+  background: var(--or);
   animation: voix-bat 1.1s ease-in-out infinite;
 }
-.voix-point[data-etat="en_cours"] { background: #2ee6a8; }
+.voix-point[data-etat="en_cours"] { background: var(--vert); }
 
 @keyframes voix-bat {
   0%, 100% { opacity: 1; }
@@ -2065,9 +2134,9 @@ body.avec-chats .cadre {
   padding: 0.7rem 1rem;
   font-size: 0.86rem;
   text-align: center;
-  background: var(--carte, #14141f);
-  border: 1px solid var(--trait, #262635);
-  border-left: 3px solid #ffb020;
+  background: var(--carte);
+  border: 1px solid var(--trait);
+  border-left: 3px solid var(--or);
   border-radius: 10px;
   box-shadow: 0 14px 34px rgba(0, 0, 0, 0.5);
 }
@@ -2082,9 +2151,9 @@ body.avec-chats .cadre {
   height: 34px;
   padding: 0;
   border-radius: 10px;
-  border: 1px solid var(--trait, #262635);
-  background: var(--carte2, #1b1b28);
-  color: #2ee6a8;
+  border: 1px solid var(--trait);
+  background: var(--carte2);
+  color: var(--vert);
   cursor: pointer;
   transition: background 0.15s ease, transform 0.15s ease;
 }
@@ -2100,4 +2169,69 @@ body.avec-chats .cadre {
     from { opacity: 0; transform: translateY(-10px); }
     to   { opacity: 1; transform: translateY(0); }
   }
+}
+
+/* Un sélecteur à trois positions : plus lisible qu'une liste déroulante pour
+   trois choix, et l'on voit celui qui est actif sans ouvrir quoi que ce soit. */
+.segments {
+  display: inline-flex;
+  padding: 3px;
+  gap: 2px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+
+.segment {
+  padding: 0.35rem 0.7rem;
+  font: inherit;
+  font-size: 0.82rem;
+  color: var(--muted);
+  background: transparent;
+  border: 0;
+  border-radius: 7px;
+  cursor: pointer;
+  transition: background 0.15s var(--ease), color 0.15s var(--ease);
+}
+
+.segment:hover { color: var(--ink); }
+
+.segment--actif {
+  background: var(--bg-2);
+  color: var(--ink);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+}
+
+/* La flamme d'une série d'amitié. Discrète quand tout va bien, insistante
+   quand la journée risque de la rompre — c'est ce cas-là qui doit se voir. */
+.serie {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  margin-left: 0.5rem;
+  padding: 0.05rem 0.4rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--or);
+  background: color-mix(in srgb, var(--or) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--or) 30%, transparent);
+  border-radius: 999px;
+  vertical-align: middle;
+}
+
+.serie--peril {
+  color: var(--rouge);
+  background: color-mix(in srgb, var(--rouge) 14%, transparent);
+  border-color: color-mix(in srgb, var(--rouge) 38%, transparent);
+  animation: serie-bat 2.4s ease-in-out infinite;
+}
+
+@keyframes serie-bat {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.55; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .serie--peril { animation: none; }
 }

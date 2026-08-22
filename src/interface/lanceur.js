@@ -126,6 +126,14 @@ const TEXTES = {
     lanceurTitre: 'Le lanceur',
     demarrerReduit: 'Démarrer réduit',
     demarrerReduitAide: 'Utile si Ludopia se lance avec votre session : il se tient prêt sans s’imposer.',
+    serieTenue: (n) => `Série de ${n} jour${n > 1 ? 's' : ''} : vous avez joué tous les deux aujourd’hui.`,
+    serieAVous: 'Votre série tient encore aujourd’hui — il ne manque que vous.',
+    serieAlui: (n) => `Série de ${n} jour${n > 1 ? 's' : ''} en péril : il manque votre ami aujourd’hui.`,
+    themeTitre: 'Apparence',
+    themeAide: 'Suivre le système, ou choisir. Le changement est immédiat.',
+    themeSysteme: 'Système',
+    themeSombre: 'Sombre',
+    themeClair: 'Clair',
     langueTitre: 'Langue',
     langueAide: 'La langue de l’interface. Les jeux gardent la leur.',
     compteTitre: 'Votre compte',
@@ -306,6 +314,14 @@ const TEXTES = {
     lanceurTitre: 'The launcher',
     demarrerReduit: 'Start minimised',
     demarrerReduitAide: 'Useful if Ludopia starts with your session: it stays ready without getting in the way.',
+    serieTenue: (n) => `${n}-day streak: you both played today.`,
+    serieAVous: 'Your streak still stands today — only you are missing.',
+    serieAlui: (n) => `${n}-day streak at risk: your friend has not played today.`,
+    themeTitre: 'Appearance',
+    themeAide: 'Follow the system, or choose. The change is immediate.',
+    themeSysteme: 'System',
+    themeSombre: 'Dark',
+    themeClair: 'Light',
     langueTitre: 'Language',
     langueAide: 'The interface language. Games keep their own.',
     compteTitre: 'Your account',
@@ -900,6 +916,9 @@ function dessinerSalon() {
   const nom = document.createElement('p');
   nom.className = 'conv-nom';
   nom.textContent = salon.nom;
+  const flamme = pastilleSerie(ami.serie);
+  if (flamme) nom.append(flamme);
+
   const sous = document.createElement('p');
   sous.className = 'ami-etat';
   const enLigne = etat.membresSalon.filter((m) => m.enLigne).length;
@@ -1319,6 +1338,23 @@ function dessinerReglages() {
   langue.className = 'btn-mini';
   langue.textContent = etat.langue === 'fr' ? 'Français' : 'English';
   langue.addEventListener('click', () => $('[data-langue]')?.click());
+  const choixTheme = document.createElement('div');
+  choixTheme.className = 'segments';
+  [['systeme', t.themeSysteme], ['sombre', t.themeSombre], ['clair', t.themeClair]]
+    .forEach(([valeur, intitule]) => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = etat.theme?.choisi === valeur ? 'segment segment--actif' : 'segment';
+      b.textContent = intitule;
+      b.addEventListener('click', async () => {
+        await enregistrerReglage('theme', valeur);
+        etat.theme = { ...etat.theme, choisi: valeur };
+        dessinerReglages();
+      });
+      choixTheme.append(b);
+    });
+  blocLanceur.append(ligneReglage(t.themeTitre, t.themeAide, choixTheme));
+
   blocLanceur.append(ligneReglage(t.langueTitre, t.langueAide, langue));
   scene.append(blocLanceur);
 
@@ -1486,6 +1522,19 @@ function messageSuspension(detail) {
   return d.motif ? `${tete} ${t.suspenduMotif(d.motif)}` : tete;
 }
 
+/**
+ * Pose le thème sur la racine du document.
+ *
+ * Un attribut plutôt qu'une classe : les feuilles de style le lisent avec
+ * `:root[data-theme="clair"]`, et l'absence d'attribut vaut sombre — ce qui
+ * évite un état intermédiaire non peint au tout premier rendu.
+ */
+function appliquerTheme(t) {
+  const clair = (t?.effectif || 'sombre') === 'clair';
+  if (clair) document.documentElement.dataset.theme = 'clair';
+  else delete document.documentElement.dataset.theme;
+}
+
 /** Traduit un code d'erreur du service ; à défaut, on montre le code brut
  *  plutôt qu'un « une erreur est survenue » qui n'aide personne. */
 function messageErreur(code, detail) {
@@ -1606,14 +1655,52 @@ function dessinerFormulaire(scene) {
 
 // --- carte d'un ami ----------------------------------------------------------
 
+/** « 42 min », « 2 h 10 » — la durée d'une partie en cours. */
+function dureeCourte(secondes) {
+  if (!secondes || secondes < 60) return null;
+  const m = Math.floor(secondes / 60);
+  if (m < 60) return `${m} min`;
+  const h = Math.floor(m / 60);
+  const reste = m % 60;
+  return reste ? `${h} h ${String(reste).padStart(2, '0')}` : `${h} h`;
+}
+
 function etatAmi(ami) {
   const t = T();
   if (ami.jeu) {
     const jeu = etat.catalogue.jeux.find((j) => j.id === ami.jeu);
-    return { texte: `${t.joueA} ${jeu ? jeu.nom : ami.jeu}`, sorte: 'joue' };
+    /* La durée transforme une information en invitation. « Joue à Villopia »
+       n'appelle rien ; « joue à Villopia depuis 42 minutes » dit qu'il y a
+       quelqu'un, maintenant, et qu'on peut le rejoindre. */
+    const depuis = dureeCourte(ami.jeuDepuis);
+    return {
+      texte: `${t.joueA} ${jeu ? jeu.nom : ami.jeu}${depuis ? ` · ${depuis}` : ''}`,
+      sorte: 'joue',
+    };
   }
   if (ami.enLigne) return { texte: t.enLigne, sorte: 'en-ligne' };
   return { texte: `${t.horsLigne} · ${quand(ami.vuLe ? ami.vuLe * 1000 : null)}`, sorte: 'hors' };
+}
+
+/**
+ * La flamme d'une série d'amitié.
+ *
+ * Trois états, et le troisième est celui qui compte : une série *en péril* —
+ * vivante mais pas encore acquise aujourd'hui — s'affiche différemment. C'est
+ * elle qui donne une raison d'écrire à quelqu'un, et l'afficher comme les
+ * autres reviendrait à ne pas l'afficher.
+ */
+function pastilleSerie(serie) {
+  if (!serie || !serie.jours) return null;
+  const t = T();
+
+  const el = document.createElement('b');
+  el.className = serie.enPeril ? 'serie serie--peril' : 'serie';
+  el.textContent = `🔥 ${serie.jours}`;
+  el.title = serie.enPeril
+    ? (serie.manque === 'moi' ? t.serieAVous : t.serieAlui(serie.jours))
+    : t.serieTenue(serie.jours);
+  return el;
 }
 
 function carteAmi(ami, actions) {
@@ -1634,6 +1721,9 @@ function carteAmi(ami, actions) {
     pastille.textContent = String(ami.nonLus);
     nom.append(pastille);
   }
+
+  const flamme = pastilleSerie(ami.serie);
+  if (flamme) nom.append(flamme);
 
   const sous = document.createElement('p');
   sous.className = 'ami-etat';
@@ -1946,6 +2036,9 @@ function dessinerConversation(scene) {
   nom.title = t.voirProfil;
   nom.addEventListener('click', () => ouvrirProfil(ami.id));
   const e = etatAmi(ami);
+  const flamme = pastilleSerie(ami.serie);
+  if (flamme) nom.append(flamme);
+
   const sous = document.createElement('p');
   sous.className = 'ami-etat';
   sous.dataset.etat = e.sorte;
@@ -2917,6 +3010,16 @@ async function demarrer() {
       if (etat.vue === 'accueil') dessinerAccueil();
     }
     suivreLeSocial();
+  });
+
+  /* L'apparence, avant tout le reste : appliquée après le premier dessin, on
+     verrait le sombre passer au clair sous les yeux de qui a choisi le clair. */
+  etat.theme = await window.ludopia.theme.etat();
+  appliquerTheme(etat.theme);
+  window.ludopia.theme.surChangement((t) => {
+    etat.theme = t;
+    appliquerTheme(t);
+    if (etat.vue === 'reglages') dessinerReglages();
   });
 
   // Le mode audio écoute dès le démarrage : un appel doit pouvoir arriver
