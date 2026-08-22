@@ -27,6 +27,12 @@ const RACINE = path.join(__dirname, '..');
 // Un avis par expéditeur : on remplace le précédent plutôt que d'empiler.
 const enCours = new Map();
 
+/* Les réglages de l'utilisateur. Ils sont consultés au moment d'afficher, pas
+   au moment de brancher : changer un interrupteur doit agir tout de suite. */
+let regles = {
+  avisMessages: true, avisSalons: true, avisInvitations: true, son: true,
+};
+
 let ouvrirConversation = () => {};
 let fenetreVisible = () => false;
 let conversationOuverte = () => null;
@@ -54,6 +60,7 @@ function iconeAvis() {
  */
 function messageRecu(ami, textes) {
   if (!Notification.isSupported() || !textes.length) return;
+  if (!regles.avisMessages) return;
 
   // Le lanceur est devant l'utilisateur, sur cette conversation : il la voit.
   if (fenetreVisible() && conversationOuverte() === ami.id) return;
@@ -69,7 +76,7 @@ function messageRecu(ami, textes) {
     title: ami.pseudo,
     body: corps.slice(0, 220),
     icon: iconeAvis(),
-    silent: false,
+    silent: !regles.son,
     // Sur Windows, une réponse directe depuis l'avis demanderait une
     // application signée et enregistrée auprès du système. On s'en tient au
     // clic, qui ouvre la conversation.
@@ -94,6 +101,7 @@ function messageRecu(ami, textes) {
  */
 function invitationRecue(ami, jeu, nomDuJeu, rejoindre) {
   if (!Notification.isSupported()) return;
+  if (!regles.avisInvitations) return;
 
   const cle = `invitation:${ami.id}:${jeu}`;
   const precedent = enCours.get(cle);
@@ -104,7 +112,7 @@ function invitationRecue(ami, jeu, nomDuJeu, rejoindre) {
     body: `Une partie sur ${nomDuJeu} vous attend.`,
     icon: iconeAvis(),
     actions: [{ type: 'button', text: 'Rejoindre' }],
-    silent: false,
+    silent: !regles.son,
   });
 
   avis.on('action', () => { enCours.delete(cle); rejoindre(); });
@@ -123,6 +131,7 @@ function invitationRecue(ami, jeu, nomDuJeu, rejoindre) {
  */
 function messageSalonRecu(salon, messages, ouvrir) {
   if (!Notification.isSupported() || !messages.length) return;
+  if (!regles.avisSalons) return;
   if (fenetreVisible() && salonOuvert() === salon.id) return;
 
   const cle = `salon:${salon.id}`;
@@ -138,7 +147,7 @@ function messageSalonRecu(salon, messages, ouvrir) {
     title: `${salon.emoji || '🎮'} ${salon.nom}`,
     body: corps.slice(0, 220),
     icon: iconeAvis(),
-    silent: false,
+    silent: !regles.son,
   });
 
   avis.on('click', () => { enCours.delete(cle); ouvrir(salon.id); });
@@ -165,4 +174,5 @@ function brancher({ ouvrir, visible, conversation, salon }) {
 
 module.exports = {
   brancher, messageRecu, messageSalonRecu, invitationRecue, vuePar,
+  reglages: (r) => { regles = { ...regles, ...r }; },
 };

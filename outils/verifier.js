@@ -91,7 +91,16 @@ function verifier(intitule, condition, detail = '') {
   await bibliotheque.waitForTimeout(700);
   verifier("le bouton Accueil ramène à la page d'accueil",
     (await bibliotheque.locator('.acc-tete').count()) === 1);
-  const articles = await bibliotheque.locator('.nouvelle').count();
+  /* Les nouvelles viennent du réseau : on attend leur arrivée plutôt que de
+     regarder une fois et de conclure. Une attente fixe transforme un service
+     un peu lent en échec, et masque un vrai défaut le jour où il survient. */
+  let articles = 0;
+  const avant = Date.now() + 20000;
+  while (Date.now() < avant) {
+    articles = await bibliotheque.locator('.nouvelle').count();
+    if (articles > 0) break;
+    await bibliotheque.waitForTimeout(1000);
+  }
   verifier('les nouvelles du studio sont chargées', articles > 0, `${articles} articles`);
   await bibliotheque.screenshot({ path: path.join(CAPTURES, '07-accueil.png') });
 

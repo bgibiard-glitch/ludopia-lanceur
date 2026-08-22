@@ -18,6 +18,22 @@ const social = require('./social');
 const avis = require('./avis');
 
 const RACINE = path.join(__dirname, '..');
+
+/* Les réglages, avec leurs valeurs par défaut. Tout est allumé au départ : un
+   avis qu'on n'attendait pas se coupe en deux clics, alors qu'un avis qui
+   n'arrive jamais ne se découvre pas — on croit simplement que personne
+   n'écrit. */
+const REGLAGES_DEFAUT = {
+  avisMessages: true,
+  avisSalons: true,
+  avisInvitations: true,
+  son: true,
+  demarrerReduit: false,
+};
+
+function reglages() {
+  return { ...REGLAGES_DEFAUT, ...(donnees.get('reglages') || {}) };
+}
 const SITE = 'https://ludopia.fr';
 // Servi depuis `assets/` et non `/lanceur/` : le dossier `lanceur/` du dépôt
 // contient les sources de cette application, il n'est jamais mis en ligne.
@@ -173,7 +189,12 @@ function creerBibliotheque() {
   });
 
   fenetreBibliotheque.loadFile(path.join(__dirname, 'interface', 'index.html'));
-  fenetreBibliotheque.once('ready-to-show', () => fenetreBibliotheque.show());
+  fenetreBibliotheque.once('ready-to-show', () => {
+    // Démarrer réduit sert à qui lance Ludopia au démarrage de sa session :
+    // le lanceur se tient prêt sans s'imposer devant ce qu'on faisait.
+    if (reglages().demarrerReduit) fenetreBibliotheque.minimize();
+    fenetreBibliotheque.show();
+  });
 
   const retenirBornes = () => {
     if (fenetreBibliotheque && !fenetreBibliotheque.isDestroyed()
@@ -490,6 +511,15 @@ function brancherIpc() {
   ipcMain.handle('actualites:lire', () => chargerActualites());
   ipcMain.handle('classement:lire', () => social.classement());
 
+  ipcMain.handle('reglages:lire', () => reglages());
+  ipcMain.handle('reglages:definir', (_e, valeurs) => {
+    donnees.set('reglages', { ...reglages(), ...valeurs });
+    avis.reglages(reglages());
+    return reglages();
+  });
+  ipcMain.handle('donnees:dossier', () => app.getPath('userData'));
+  ipcMain.handle('donnees:ouvrir', () => shell.openPath(app.getPath('userData')));
+
   // --- service social ---
   ipcMain.handle('social:etat', () => social.etat());
   ipcMain.handle('social:inscription', (_e, pseudo, courriel, mdp) =>
@@ -582,6 +612,7 @@ app.whenReady().then(async () => {
      les yeux : signaler un message qu'il est en train de lire serait une
      nuisance. L'interface tient le processus principal au courant de la
      conversation ouverte. */
+  avis.reglages(reglages());
   avis.brancher({
     ouvrir: (idAmi) => {
       montrerBibliotheque();

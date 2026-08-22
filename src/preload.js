@@ -25,6 +25,11 @@ contextBridge.exposeInMainWorld('ludopia', {
   actualites: () => ipcRenderer.invoke('actualites:lire'),
   classement: () => ipcRenderer.invoke('classement:lire'),
 
+  reglages: () => ipcRenderer.invoke('reglages:lire'),
+  definirReglages: (valeurs) => ipcRenderer.invoke('reglages:definir', valeurs),
+  dossierDonnees: () => ipcRenderer.invoke('donnees:dossier'),
+  ouvrirDossierDonnees: () => ipcRenderer.invoke('donnees:ouvrir'),
+
   /* Le service social. L'interface ne voit jamais le jeton de session ni
      l'adresse du service : elle demande, le processus principal répond. */
   social: {

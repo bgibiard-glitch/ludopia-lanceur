@@ -113,6 +113,25 @@ const TEXTES = {
     profilMesure: 'Le niveau vient des jours où un jeu a été ouvert depuis le lanceur, pas du temps passé — qui ne quitte pas votre machine.',
     chercherJeu: 'Chercher un jeu…',
     aucunResultat: 'Aucun jeu ne correspond.',
+    reglages: 'Réglages',
+    avisTitre: 'Avis',
+    avisMessages: 'Messages privés',
+    avisMessagesAide: 'Vous prévenir quand un ami écrit, même en pleine partie. Rien ne s’affiche si la conversation est déjà sous vos yeux.',
+    avisSalons: 'Messages de salon',
+    avisSalonsAide: 'Vous prévenir quand quelqu’un parle dans un salon que vous suivez.',
+    avisInvitations: 'Invitations à jouer',
+    avisInvitationsAide: 'Vous prévenir quand un ami vous invite à le rejoindre sur un jeu.',
+    avisSon: 'Son',
+    avisSonAide: 'Jouer le son du système avec chaque avis.',
+    lanceurTitre: 'Le lanceur',
+    demarrerReduit: 'Démarrer réduit',
+    demarrerReduitAide: 'Utile si Ludopia se lance avec votre session : il se tient prêt sans s’imposer.',
+    langueTitre: 'Langue',
+    langueAide: 'La langue de l’interface. Les jeux gardent la leur.',
+    compteTitre: 'Votre compte',
+    donneesTitre: 'Vos données',
+    donneesOu: 'Temps de jeu, parties, positions de fenêtres et session : tout vit ici, sur votre machine. Aucune mise à jour n’y touche.',
+    ouvrirDossier: 'Ouvrir le dossier',
     dejaCompte: 'J’ai déjà un compte',
     pasDeCompte: 'Créer un compte',
     deconnexion: 'Se déconnecter',
@@ -270,6 +289,25 @@ const TEXTES = {
     profilMesure: 'The level comes from the days a game was opened from the launcher, not from time spent — which never leaves your machine.',
     chercherJeu: 'Search a game…',
     aucunResultat: 'No game matches.',
+    reglages: 'Settings',
+    avisTitre: 'Notifications',
+    avisMessages: 'Direct messages',
+    avisMessagesAide: 'Tell you when a friend writes, even mid-game. Nothing shows if the conversation is already in front of you.',
+    avisSalons: 'Room messages',
+    avisSalonsAide: 'Tell you when someone speaks in a room you follow.',
+    avisInvitations: 'Game invitations',
+    avisInvitationsAide: 'Tell you when a friend invites you to join them on a game.',
+    avisSon: 'Sound',
+    avisSonAide: 'Play the system sound with each notification.',
+    lanceurTitre: 'The launcher',
+    demarrerReduit: 'Start minimised',
+    demarrerReduitAide: 'Useful if Ludopia starts with your session: it stays ready without getting in the way.',
+    langueTitre: 'Language',
+    langueAide: 'The interface language. Games keep their own.',
+    compteTitre: 'Your account',
+    donneesTitre: 'Your data',
+    donneesOu: 'Time played, sessions, window positions and your sign-in: it all lives here, on your machine. No update touches it.',
+    ouvrirDossier: 'Open the folder',
     dejaCompte: 'I already have an account',
     pasDeCompte: 'Create an account',
     deconnexion: 'Sign out',
@@ -347,6 +385,9 @@ let etat = {
   reactionsDirectes: [],
   profil: null,
   recherche: '',          // filtre de la bibliothèque
+  reglages: {},
+  dossierDonnees: '',
+  versionLanceur: '',
   vue: 'accueil',   // 'accueil', 'jeu' ou 'amis'
   actualites: null,
   classement: null,
@@ -410,6 +451,8 @@ function dessinerRail() {
   rail.textContent = '';
   const filtre = etat.recherche.trim().toLowerCase();
   $('#accueil')?.setAttribute('aria-current', String(etat.vue === 'accueil'));
+  $('#reglagesBouton')?.setAttribute('aria-current', String(etat.vue === 'reglages'));
+
   const boutonSalons = $('#salonsBouton');
   if (boutonSalons) {
     boutonSalons.setAttribute('aria-current', String(etat.vue === 'salons'));
@@ -1175,6 +1218,228 @@ function dessinerProfil() {
 
   voile.append(carte);
   document.body.append(voile);
+}
+
+
+// =============================================================================
+// Réglages
+// =============================================================================
+
+/**
+ * Une ligne de réglage : intitulé, explication, et l'interrupteur.
+ *
+ * L'explication n'est pas décorative. Un interrupteur nommé « Avis » sans plus
+ * ne dit ni ce qu'il déclenche, ni quand — et l'utilisateur le laisse dans
+ * l'état où il l'a trouvé, faute de savoir.
+ */
+function ligneReglage(intitule, explication, controle) {
+  const el = document.createElement('div');
+  el.className = 'reglage';
+
+  const texte = document.createElement('div');
+  const t1 = document.createElement('p');
+  t1.className = 'reglage-nom';
+  t1.textContent = intitule;
+  texte.append(t1);
+
+  if (explication) {
+    const t2 = document.createElement('p');
+    t2.className = 'reglage-aide';
+    t2.textContent = explication;
+    texte.append(t2);
+  }
+
+  el.append(texte, controle);
+  return el;
+}
+
+function interrupteur(actif, change) {
+  const b = document.createElement('button');
+  b.type = 'button';
+  b.className = 'bascule';
+  b.setAttribute('role', 'switch');
+  b.setAttribute('aria-checked', String(actif));
+  b.addEventListener('click', () => {
+    const neuf = b.getAttribute('aria-checked') !== 'true';
+    b.setAttribute('aria-checked', String(neuf));
+    change(neuf);
+  });
+  return b;
+}
+
+function dessinerReglages() {
+  const t = T();
+  const scene = $('#scene');
+  scene.textContent = '';
+  scene.style.setProperty('--accent', 'var(--brand)');
+  scene.style.setProperty('--accent-ink', '#080813');
+
+  const tete = document.createElement('section');
+  tete.className = 'acc-tete';
+  const h1 = document.createElement('h1');
+  h1.textContent = t.reglages;
+  tete.append(h1);
+  scene.append(tete);
+
+  const r = etat.reglages;
+
+  // --- avis ---
+  const blocAvis = document.createElement('section');
+  blocAvis.className = 'acc-bloc';
+  const h2a = document.createElement('h2');
+  h2a.textContent = t.avisTitre;
+  blocAvis.append(h2a);
+
+  blocAvis.append(ligneReglage(t.avisMessages, t.avisMessagesAide,
+    interrupteur(r.avisMessages, (v) => enregistrerReglage('avisMessages', v))));
+  blocAvis.append(ligneReglage(t.avisSalons, t.avisSalonsAide,
+    interrupteur(r.avisSalons, (v) => enregistrerReglage('avisSalons', v))));
+  blocAvis.append(ligneReglage(t.avisInvitations, t.avisInvitationsAide,
+    interrupteur(r.avisInvitations, (v) => enregistrerReglage('avisInvitations', v))));
+  blocAvis.append(ligneReglage(t.avisSon, t.avisSonAide,
+    interrupteur(r.son, (v) => enregistrerReglage('son', v))));
+  scene.append(blocAvis);
+
+  // --- lanceur ---
+  const blocLanceur = document.createElement('section');
+  blocLanceur.className = 'acc-bloc';
+  const h2b = document.createElement('h2');
+  h2b.textContent = t.lanceurTitre;
+  blocLanceur.append(h2b);
+
+  blocLanceur.append(ligneReglage(t.demarrerReduit, t.demarrerReduitAide,
+    interrupteur(r.demarrerReduit, (v) => enregistrerReglage('demarrerReduit', v))));
+
+  const langue = document.createElement('button');
+  langue.type = 'button';
+  langue.className = 'btn-mini';
+  langue.textContent = etat.langue === 'fr' ? 'Français' : 'English';
+  langue.addEventListener('click', () => $('[data-langue]')?.click());
+  blocLanceur.append(ligneReglage(t.langueTitre, t.langueAide, langue));
+  scene.append(blocLanceur);
+
+  // --- compte ---
+  const blocCompte = document.createElement('section');
+  blocCompte.className = 'acc-bloc';
+  const h2c = document.createElement('h2');
+  h2c.textContent = t.compteTitre;
+  blocCompte.append(h2c);
+
+  if (etat.social.connecte) {
+    const qui = document.createElement('p');
+    qui.className = 'acc-vide';
+    qui.textContent = `${etat.social.moi?.pseudo || ''}`
+      + (etat.social.moi?.courriel ? ` · ${etat.social.moi.courriel}` : '');
+    blocCompte.append(qui);
+
+    const barre = document.createElement('div');
+    barre.className = 'ami-actions';
+
+    const profil = document.createElement('button');
+    profil.type = 'button';
+    profil.className = 'btn-mini';
+    profil.textContent = t.voirProfil;
+    profil.addEventListener('click', () => ouvrirProfil(etat.social.moi?.id));
+    barre.append(profil);
+
+    const sortir = document.createElement('button');
+    sortir.type = 'button';
+    sortir.className = 'btn-mini';
+    sortir.textContent = t.deconnexion;
+    sortir.addEventListener('click', async () => {
+      await window.ludopia.social.deconnexion();
+      etat.social = { connecte: false, moi: null };
+      etat.amis = null;
+      etat.salons = [];
+      dessinerReglages();
+    });
+    barre.append(sortir);
+    blocCompte.append(barre);
+  } else {
+    blocCompte.append(bulle(t.connexionRequise, 'calme'));
+    const aller = document.createElement('button');
+    aller.type = 'button';
+    aller.className = 'action-secondaire';
+    aller.textContent = t.connexion;
+    aller.addEventListener('click', ouvrirAmis);
+    blocCompte.append(aller);
+  }
+  scene.append(blocCompte);
+
+  // --- données ---
+  const blocDonnees = document.createElement('section');
+  blocDonnees.className = 'acc-bloc';
+  const h2d = document.createElement('h2');
+  h2d.textContent = t.donneesTitre;
+  blocDonnees.append(h2d);
+
+  const ou = document.createElement('p');
+  ou.className = 'acc-vide';
+  ou.textContent = t.donneesOu;
+  blocDonnees.append(ou);
+
+  const chemin = document.createElement('p');
+  chemin.className = 'stat-somme';
+  chemin.textContent = etat.dossierDonnees || '…';
+  blocDonnees.append(chemin);
+
+  const ouvrirDossier = document.createElement('button');
+  ouvrirDossier.type = 'button';
+  ouvrirDossier.className = 'btn-mini';
+  ouvrirDossier.textContent = t.ouvrirDossier;
+  ouvrirDossier.addEventListener('click', () => window.ludopia.ouvrirDossierDonnees());
+  blocDonnees.append(ouvrirDossier);
+  scene.append(blocDonnees);
+
+  // --- à propos ---
+  const blocApropos = document.createElement('section');
+  blocApropos.className = 'acc-bloc';
+  const h2e = document.createElement('h2');
+  h2e.textContent = t.apropos;
+  blocApropos.append(h2e);
+
+  const version = document.createElement('p');
+  version.className = 'acc-vide';
+  version.textContent = `Ludopia ${etat.versionLanceur || ''}`;
+  blocApropos.append(version);
+
+  const barre2 = document.createElement('div');
+  barre2.className = 'ami-actions';
+
+  const maj = document.createElement('button');
+  maj.type = 'button';
+  maj.className = 'btn-mini';
+  maj.textContent = t.majAJour;
+  maj.addEventListener('click', () => window.ludopia.majChercher());
+  barre2.append(maj);
+
+  const site = document.createElement('button');
+  site.type = 'button';
+  site.className = 'btn-mini';
+  site.textContent = t.siteWeb;
+  site.addEventListener('click', () => window.ludopia.ouvrirLien('https://ludopia.fr'));
+  barre2.append(site);
+
+  blocApropos.append(barre2);
+  scene.append(blocApropos);
+
+  dessinerRail();
+  dessinerChats();
+  scene.scrollTop = 0;
+}
+
+async function enregistrerReglage(cle, valeur) {
+  etat.reglages = { ...etat.reglages, [cle]: valeur };
+  await window.ludopia.definirReglages(etat.reglages);
+}
+
+function ouvrirReglages() {
+  etat.vue = 'reglages';
+  etat.conversation = null;
+  etat.salon = null;
+  window.ludopia.social.conversationAffichee(null);
+  window.ludopia.social.salonAffiche(null);
+  dessinerReglages();
 }
 
 // =============================================================================
@@ -2463,6 +2728,7 @@ function redessiner() {
   else if (etat.vue === 'amis') dessinerAmis();
   else if (etat.vue === 'salons') dessinerSalons();
   else if (etat.vue === 'salon') dessinerSalon();
+  else if (etat.vue === 'reglages') dessinerReglages();
   else dessinerScene();
 }
 
@@ -2537,6 +2803,8 @@ function appliquerLangue() {
   $('[data-langue]').textContent = etat.langue === 'fr' ? 'EN' : 'FR';
   const rech = $('#recherche');
   if (rech) rech.placeholder = T().chercherJeu;
+  const bReglages = $('#reglagesBouton');
+  if (bReglages) bReglages.textContent = T().reglages;
   for (const el of document.querySelectorAll('[data-t]')) {
     const v = T()[el.dataset.t];
     if (typeof v === 'string') el.textContent = v;
@@ -2567,6 +2835,11 @@ async function demarrer() {
   $('#accueil')?.addEventListener('click', ouvrirAccueil);
   $('#amis')?.addEventListener('click', ouvrirAmis);
   $('#salonsBouton')?.addEventListener('click', ouvrirLesSalons);
+  $('#reglagesBouton')?.addEventListener('click', ouvrirReglages);
+
+  etat.versionLanceur = depart.versionLanceur;
+  window.ludopia.reglages().then((r) => { etat.reglages = r; });
+  window.ludopia.dossierDonnees().then((d) => { etat.dossierDonnees = d; });
 
   const champRecherche = $('#recherche');
   if (champRecherche) {
