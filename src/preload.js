@@ -68,6 +68,7 @@ contextBridge.exposeInMainWorld('ludopia', {
     reactions: (avec) => ipcRenderer.invoke('social:reactions', avec),
     statut: (statut) => ipcRenderer.invoke('social:statut', statut),
     profil: (de) => ipcRenderer.invoke('social:profil', de),
+    modifierProfil: (d) => ipcRenderer.invoke('social:modifierProfil', d),
     emojis: () => ipcRenderer.invoke('social:emojis'),
     jeuOuvert: () => ipcRenderer.invoke('social:jeuOuvert'),
 

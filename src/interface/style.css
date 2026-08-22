@@ -2992,3 +2992,76 @@ body.dans-serveur .scene {
 }
 .bout-mouvement b[data-sens="+"] { color: var(--vert); }
 .bout-mouvement b { min-width: 64px; font-variant-numeric: tabular-nums; }
+
+/* ============================================================
+   LE PROFIL PERSONNALISE
+   ============================================================ */
+
+.profil-figure { width: 72px; height: 72px; border-radius: 20px; }
+.profil-figure--grande { width: 96px; height: 96px; margin: 0.4rem 0; }
+
+.profil-bio {
+  margin: 0.5rem 0 0.2rem;
+  font-size: 0.9rem;
+  color: var(--ink-dim);
+  font-style: italic;
+}
+
+.profil-editer { margin-top: 0.9rem; }
+
+.profil--edition { text-align: left; }
+.profil--edition .profil-sous { margin-top: 1.1rem; }
+
+.profil-bio-champ {
+  width: 100%;
+  padding: 0.6rem 0.8rem;
+  font: inherit;
+  color: inherit;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  resize: none;
+}
+
+.profil-bannieres { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+
+.profil-banniere {
+  width: 74px;
+  height: 34px;
+  border: 2px solid transparent;
+  border-radius: 9px;
+  cursor: pointer;
+}
+.profil-banniere--actif { border-color: var(--ink); }
+
+/* Les bannières : huit dégradés nommés, les mêmes partout. La liste est
+   fermée côté service ; ici on leur donne corps. */
+.profil-banniere[data-banniere="nuit"]   { background: linear-gradient(120deg, #0a0b1c, #7c5cff); }
+.profil-banniere[data-banniere="aube"]   { background: linear-gradient(120deg, #ff7a45, #ffb020); }
+.profil-banniere[data-banniere="menthe"] { background: linear-gradient(120deg, #0f7d59, #2ee6a8); }
+.profil-banniere[data-banniere="braise"] { background: linear-gradient(120deg, #7f1d33, #ff5c7a); }
+.profil-banniere[data-banniere="ocean"]  { background: linear-gradient(120deg, #123f74, #22d3ee); }
+.profil-banniere[data-banniere="orage"]  { background: linear-gradient(120deg, #232345, #94a3b8); }
+.profil-banniere[data-banniere="foret"]  { background: linear-gradient(120deg, #14421f, #a3e635); }
+.profil-banniere[data-banniere="sable"]  { background: linear-gradient(120deg, #8a6a3b, #f5deb3); }
+
+/* La carte de profil porte la bannière en couronnement. */
+.profil[data-banniere]::before {
+  content: '';
+  /* La carte est une grille centrée : sans `justify-self`, ce pseudo-élément
+     devient un item de grille à largeur nulle — un bandeau invisible. Les
+     marges négatives répondent au rembourrage réel de la carte (2rem 1.8rem)
+     et le rayon à ses coins (22px). */
+  justify-self: stretch;
+  height: 64px;
+  margin: -2rem -1.8rem 0.4rem;
+  border-radius: 22px 22px 0 0;
+}
+.profil[data-banniere="nuit"]::before   { background: linear-gradient(120deg, #0a0b1c, #7c5cff); }
+.profil[data-banniere="aube"]::before   { background: linear-gradient(120deg, #ff7a45, #ffb020); }
+.profil[data-banniere="menthe"]::before { background: linear-gradient(120deg, #0f7d59, #2ee6a8); }
+.profil[data-banniere="braise"]::before { background: linear-gradient(120deg, #7f1d33, #ff5c7a); }
+.profil[data-banniere="ocean"]::before  { background: linear-gradient(120deg, #123f74, #22d3ee); }
+.profil[data-banniere="orage"]::before  { background: linear-gradient(120deg, #232345, #94a3b8); }
+.profil[data-banniere="foret"]::before  { background: linear-gradient(120deg, #14421f, #a3e635); }
+.profil[data-banniere="sable"]::before  { background: linear-gradient(120deg, #8a6a3b, #f5deb3); }

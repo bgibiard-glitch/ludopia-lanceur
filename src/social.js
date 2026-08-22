@@ -406,6 +406,7 @@ module.exports = {
   reactions: (avec) => appel('GET', `/reactions?avec=${encodeURIComponent(avec)}`),
   definirStatut: (statut) => appel('POST', '/statut', { corps: { statut } }),
   profil: (de) => appel('GET', de ? `/profil?de=${encodeURIComponent(de)}` : '/profil'),
+  modifierProfil: (d) => appel('POST', '/profil', { corps: d }),
   emojis: () => appel('GET', '/emojis', { avecJeton: false }),
 
   messages: (avec, depuis = 0) => appel(

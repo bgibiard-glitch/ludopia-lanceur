@@ -130,6 +130,14 @@ const TEXTES = {
     serieAVous: 'Votre série tient encore aujourd’hui — il ne manque que vous.',
     serieAlui: (n) => `Série de ${n} jour${n > 1 ? 's' : ''} en péril : il manque votre ami aujourd’hui.`,
     boutique: 'Boutique',
+    editerProfil: 'Personnaliser',
+    bioTitre: 'Deux lignes sur vous',
+    accentTitre: 'Votre couleur',
+    banniereTitre: 'Votre bannière',
+    avatarTitre: 'Votre figure',
+    avatarAide: 'Elle est dessinée à partir d’un dé, pas d’une photo : relancez jusqu’à celle qui vous plaît. La même vous suivra partout, jusque dans les jeux.',
+    relancer: 'Relancer le dé',
+    enregistre: 'Enregistré.',
     surimpressionTitre: 'Tchat sur le jeu (F10)',
     surimpressionAide: 'Une petite fenêtre déplaçable, par-dessus la partie : les messages '
       + 'des amis, et de quoi répondre sans quitter le jeu. F10 la montre et la cache.',
@@ -322,6 +330,14 @@ const TEXTES = {
     serieAVous: 'Your streak still stands today — only you are missing.',
     serieAlui: (n) => `${n}-day streak at risk: your friend has not played today.`,
     boutique: 'Shop',
+    editerProfil: 'Customise',
+    bioTitre: 'Two lines about you',
+    accentTitre: 'Your colour',
+    banniereTitre: 'Your banner',
+    avatarTitre: 'Your figure',
+    avatarAide: 'It is drawn from a dice roll, not a photo: roll until you like it. The same one follows you everywhere, into the games.',
+    relancer: 'Roll again',
+    enregistre: 'Saved.',
     surimpressionTitre: 'In-game chat (F10)',
     surimpressionAide: 'A small movable window over your game: friends’ messages, and a '
       + 'field to reply without leaving. F10 shows and hides it.',
@@ -1175,10 +1191,22 @@ function dessinerProfil() {
   fermer.addEventListener('click', () => voile.remove());
   carte.append(fermer);
 
+  if (p.banniere) carte.dataset.banniere = p.banniere;
+  if (p.accent) carte.style.setProperty('--teinte-perso', p.accent);
+
   const rond = document.createElement('span');
   rond.className = 'profil-rond';
-  rond.style.setProperty('--teinte', teinte(p.id));
-  rond.textContent = initiales(p.pseudo);
+  rond.style.setProperty('--teinte', p.accent || teinte(p.id));
+  if (p.avatar) {
+    const figure = document.createElement('img');
+    figure.className = 'profil-figure';
+    figure.alt = '';
+    figure.src = dessinerFigure(p.avatar, p.accent);
+    rond.textContent = '';
+    rond.append(figure);
+  } else {
+    rond.textContent = initiales(p.pseudo);
+  }
   carte.append(rond);
 
   const nom = document.createElement('h2');
@@ -1195,6 +1223,24 @@ function dessinerProfil() {
     st.className = 'profil-statut';
     st.textContent = p.statut;
     carte.append(st);
+  }
+
+  if (p.bio) {
+    const bio = document.createElement('p');
+    bio.className = 'profil-bio';
+    bio.textContent = p.bio;
+    carte.append(bio);
+  }
+
+  // Sa propre fiche s'édite depuis la carte : c'est là qu'on la regarde, c'est
+  // là qu'on veut la changer.
+  if (p.id === etat.social.moi?.id) {
+    const editer = document.createElement('button');
+    editer.type = 'button';
+    editer.className = 'btn-mini profil-editer';
+    editer.textContent = t.editerProfil;
+    editer.addEventListener('click', () => { voile.remove(); ouvrirEditionProfil(p); });
+    carte.append(editer);
   }
 
   // La barre de progression : on voit ce qui manque pour le palier suivant.
@@ -1251,6 +1297,157 @@ function dessinerProfil() {
   document.body.append(voile);
 }
 
+
+// =============================================================================
+// Édition de sa fiche
+// =============================================================================
+
+const ACCENTS_PROFIL = [
+  '#7c5cff', '#2ee6a8', '#ffb020', '#ff5c7a', '#4d8dff', '#ff7a45', '#c084fc', '#22d3ee',
+];
+const BANNIERES_PROFIL = ['nuit', 'aube', 'menthe', 'braise', 'ocean', 'orage', 'foret', 'sable'];
+
+function ouvrirEditionProfil(p) {
+  const t = T();
+
+  const voile = document.createElement('div');
+  voile.className = 'voile';
+  voile.addEventListener('click', (evt) => { if (evt.target === voile) voile.remove(); });
+
+  const carte = document.createElement('div');
+  carte.className = 'profil profil--edition';
+  carte.setAttribute('role', 'dialog');
+  carte.setAttribute('aria-modal', 'true');
+
+  const fermer = document.createElement('button');
+  fermer.type = 'button';
+  fermer.className = 'profil-fermer';
+  fermer.textContent = '✕';
+  fermer.addEventListener('click', () => voile.remove());
+  carte.append(fermer);
+
+  const brouillon = {
+    avatar: p.avatar || null,
+    accent: p.accent || null,
+    banniere: p.banniere || null,
+    bio: p.bio || '',
+  };
+
+  // --- la figure ---
+  const h3a = document.createElement('h3');
+  h3a.className = 'profil-sous';
+  h3a.textContent = t.avatarTitre;
+  carte.append(h3a);
+
+  const apercu = document.createElement('img');
+  apercu.className = 'profil-figure profil-figure--grande';
+  apercu.alt = '';
+  const redessiner = () => {
+    apercu.src = dessinerFigure(brouillon.avatar || etat.social.moi?.id || 'x',
+      brouillon.accent);
+  };
+  redessiner();
+  carte.append(apercu);
+
+  const aideAvatar = document.createElement('p');
+  aideAvatar.className = 'acc-note';
+  aideAvatar.textContent = t.avatarAide;
+  carte.append(aideAvatar);
+
+  const relancer = document.createElement('button');
+  relancer.type = 'button';
+  relancer.className = 'btn-mini';
+  relancer.textContent = `🎲 ${t.relancer}`;
+  relancer.addEventListener('click', () => {
+    brouillon.avatar = Math.random().toString(36).slice(2, 12);
+    redessiner();
+  });
+  carte.append(relancer);
+
+  // --- la couleur ---
+  const h3b = document.createElement('h3');
+  h3b.className = 'profil-sous';
+  h3b.textContent = t.accentTitre;
+  carte.append(h3b);
+
+  const couleurs = document.createElement('div');
+  couleurs.className = 'srv-couleurs';
+  for (const c of ACCENTS_PROFIL) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = c === brouillon.accent ? 'srv-couleur srv-couleur--actif' : 'srv-couleur';
+    b.style.setProperty('--c', c);
+    b.addEventListener('click', () => {
+      brouillon.accent = c;
+      couleurs.querySelectorAll('.srv-couleur').forEach((x) => x.classList.remove('srv-couleur--actif'));
+      b.classList.add('srv-couleur--actif');
+      redessiner();
+    });
+    couleurs.append(b);
+  }
+  carte.append(couleurs);
+
+  // --- la banniere ---
+  const h3c = document.createElement('h3');
+  h3c.className = 'profil-sous';
+  h3c.textContent = t.banniereTitre;
+  carte.append(h3c);
+
+  const bannieres = document.createElement('div');
+  bannieres.className = 'profil-bannieres';
+  for (const nom of BANNIERES_PROFIL) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = nom === brouillon.banniere
+      ? 'profil-banniere profil-banniere--actif' : 'profil-banniere';
+    b.dataset.banniere = nom;
+    b.setAttribute('aria-label', nom);
+    b.addEventListener('click', () => {
+      brouillon.banniere = nom;
+      bannieres.querySelectorAll('.profil-banniere').forEach((x) => x.classList.remove('profil-banniere--actif'));
+      b.classList.add('profil-banniere--actif');
+    });
+    bannieres.append(b);
+  }
+  carte.append(bannieres);
+
+  // --- la bio ---
+  const h3d = document.createElement('h3');
+  h3d.className = 'profil-sous';
+  h3d.textContent = t.bioTitre;
+  carte.append(h3d);
+
+  const bio = document.createElement('textarea');
+  bio.className = 'profil-bio-champ';
+  bio.maxLength = 160;
+  bio.rows = 2;
+  bio.value = brouillon.bio;
+  carte.append(bio);
+
+  const retour = document.createElement('div');
+  carte.append(retour);
+
+  const ok = document.createElement('button');
+  ok.type = 'button';
+  ok.className = 'jouer jouer--mini';
+  ok.textContent = t.enregistrer ?? 'Enregistrer';
+  ok.addEventListener('click', async () => {
+    retour.textContent = '';
+    const r = await window.ludopia.social.modifierProfil({
+      avatar: brouillon.avatar,
+      accent: brouillon.accent,
+      banniere: brouillon.banniere,
+      bio: bio.value,
+    });
+    if (!r.ok) { retour.append(bulle(messageErreur(r.erreur, r.detail))); return; }
+    ok.textContent = `✓ ${t.enregistre}`;
+    setTimeout(() => voile.remove(), 900);
+  });
+  carte.append(ok);
+
+  voile.append(carte);
+  document.body.append(voile);
+}
 
 // =============================================================================
 // Réglages
@@ -1530,6 +1727,44 @@ function messageSuspension(detail) {
 
   const tete = quand ? t.suspenduJusqu(quand) : t.suspenduSansTerme;
   return d.motif ? `${tete} ${t.suspenduMotif(d.motif)}` : tete;
+}
+
+/**
+ * Dessine une figure à partir d'une graine.
+ *
+ * Le même algorithme partout — ici, dans les jeux, sur le site : une grille
+ * cinq par cinq symétrique, dont chaque case s'allume selon un générateur
+ * dérivé de la graine. C'est le principe des identicônes, et il tient en
+ * vingt lignes sans rien télécharger ni héberger.
+ */
+function dessinerFigure(graine, accent) {
+  // Un générateur simple et déterministe : la même graine donne la même figure
+  // sur toute machine. La qualité statistique importe peu, la stabilité si.
+  let h = 2166136261;
+  for (const c of String(graine)) {
+    h ^= c.charCodeAt(0);
+    h = Math.imul(h, 16777619);
+  }
+  const suivant = () => {
+    h ^= h << 13; h ^= h >>> 17; h ^= h << 5;
+    return (h >>> 0) / 4294967295;
+  };
+
+  const teinteFond = accent || '#7c5cff';
+  let cases = '';
+  for (let y = 0; y < 5; y += 1) {
+    for (let x = 0; x < 3; x += 1) {
+      if (suivant() > 0.5) {
+        cases += `<rect x="${10 + x * 16}" y="${10 + y * 16}" width="14" height="14" rx="3" fill="#fff" opacity="0.92"/>`;
+        if (x < 2) {
+          cases += `<rect x="${10 + (4 - x) * 16}" y="${10 + y * 16}" width="14" height="14" rx="3" fill="#fff" opacity="0.92"/>`;
+        }
+      }
+    }
+  }
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">`
+    + `<rect width="100" height="100" rx="22" fill="${teinteFond}"/>${cases}</svg>`;
+  return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
 }
 
 /**
