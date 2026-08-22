@@ -41,6 +41,8 @@ contextBridge.exposeInMainWorld('ludopia', {
     retirerAmi: (id) => ipcRenderer.invoke('social:retirerAmi', id),
     bloquer: (id, actif) => ipcRenderer.invoke('social:bloquer', id, actif),
     signaler: (id, motif) => ipcRenderer.invoke('social:signaler', id, motif),
+    inviter: (vers, jeu) => ipcRenderer.invoke('social:inviter', vers, jeu),
+    jeuOuvert: () => ipcRenderer.invoke('social:jeuOuvert'),
 
     messages: (avec, depuis) => ipcRenderer.invoke('social:messages', avec, depuis),
     attendreMessages: (avec, depuis) =>

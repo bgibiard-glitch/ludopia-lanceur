@@ -506,6 +506,11 @@ function brancherIpc() {
   ipcMain.handle('social:bloquer', (_e, id, actif) => social.bloquer(id, actif));
   ipcMain.handle('social:signaler', (_e, id, motif) => social.signaler(id, motif));
 
+  ipcMain.handle('social:inviter', (_e, vers, jeu) => social.inviter(vers, jeu));
+  // Quel jeu proposer : celui qui est ouvert. Inviter sans jouer n'aurait
+  // pas de sens — il n'y aurait rien à rejoindre.
+  ipcMain.handle('social:jeuOuvert', () => [...fenetresJeu.keys()][0] || null);
+
   ipcMain.handle('social:messages', (_e, avec, depuis) => social.messages(avec, depuis));
   ipcMain.handle('social:attendreMessages', (_e, avec, depuis) =>
     social.attendreMessages(avec, depuis));
@@ -578,6 +583,21 @@ app.whenReady().then(async () => {
 
     if (fenetreBibliotheque && !fenetreBibliotheque.isDestroyed()) {
       fenetreBibliotheque.webContents.send('social:nouveauxMessages', recus);
+    }
+  });
+
+  social.surInvitation(async (invitations) => {
+    for (const inv of invitations) {
+      const jeu = catalogue.jeux.find((j) => j.id === inv.jeu);
+      avis.invitationRecue(
+        { id: inv.ami, pseudo: inv.pseudo },
+        inv.jeu,
+        jeu ? jeu.nom : inv.jeu,
+        () => { montrerBibliotheque(); lancerJeu(inv.jeu); },
+      );
+      // Vue une fois signalée : sans cela le même avis reviendrait toutes les
+      // dix secondes pendant dix minutes.
+      await social.invitationVue(inv.id);
     }
   });
 

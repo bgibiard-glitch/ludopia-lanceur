@@ -84,6 +84,36 @@ function messageRecu(ami, textes) {
   enCours.set(ami.id, avis);
 }
 
+/**
+ * Une invitation à rejoindre une partie.
+ *
+ * Deux boutons plutôt qu'un simple clic : « Rejoindre » lance le jeu tout de
+ * suite, ce qui est l'intérêt de l'invitation. Sur les systèmes qui ne savent
+ * pas afficher de boutons, le clic sur l'avis fait la même chose.
+ */
+function invitationRecue(ami, jeu, nomDuJeu, rejoindre) {
+  if (!Notification.isSupported()) return;
+
+  const cle = `invitation:${ami.id}:${jeu}`;
+  const precedent = enCours.get(cle);
+  if (precedent) precedent.close();
+
+  const avis = new Notification({
+    title: `${ami.pseudo} vous invite`,
+    body: `Une partie sur ${nomDuJeu} vous attend.`,
+    icon: iconeAvis(),
+    actions: [{ type: 'button', text: 'Rejoindre' }],
+    silent: false,
+  });
+
+  avis.on('action', () => { enCours.delete(cle); rejoindre(); });
+  avis.on('click', () => { enCours.delete(cle); rejoindre(); });
+  avis.on('close', () => enCours.delete(cle));
+
+  avis.show();
+  enCours.set(cle, avis);
+}
+
 /** Retire l'avis d'une personne dont on vient d'ouvrir la conversation. */
 function vuePar(idAmi) {
   const a = enCours.get(idAmi);
@@ -99,4 +129,4 @@ function brancher({ ouvrir, visible, conversation }) {
   conversationOuverte = conversation;
 }
 
-module.exports = { brancher, messageRecu, vuePar };
+module.exports = { brancher, messageRecu, invitationRecue, vuePar };

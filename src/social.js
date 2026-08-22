@@ -28,6 +28,8 @@ let horloge = null;
 let jeuEnCours = null;
 let prevenir = () => {};
 let surMessages = () => {};
+let surInvitation = () => {};
+let horlogeInvitations = null;
 let dernierVu = 0;
 let ecouteActive = false;
 
@@ -104,6 +106,7 @@ function retenirSession(nouveauJeton, profil) {
   moi = profil;
   donnees.set('social', { jeton: chiffrer(nouveauJeton), moi: profil });
   demarrerBattement();
+  demarrerInvitations();
   calerLeCurseur().then(ecouterMessages);
   prevenir();
 }
@@ -113,6 +116,7 @@ function oublierSession() {
   moi = null;
   donnees.set('social', null);
   arreterBattement();
+  arreterInvitations();
   prevenir();
 }
 
@@ -139,6 +143,7 @@ async function reprendre() {
   moi = r.donnees;
   donnees.set('social', { jeton: chiffrer(jeton), moi });
   demarrerBattement();
+  demarrerInvitations();
   await calerLeCurseur();
   ecouterMessages();
   return true;
@@ -147,6 +152,27 @@ async function reprendre() {
 // =============================================================================
 // Présence
 // =============================================================================
+
+/**
+ * Les invitations, relevées régulièrement.
+ *
+ * Contrairement aux messages, elles ne justifient pas une requête en attente :
+ * une invitation à jouer n'est pas une conversation, et dix secondes de délai
+ * ne se remarquent pas quand l'autre vient à peine de lancer sa partie.
+ */
+function demarrerInvitations() {
+  arreterInvitations();
+  if (!jeton) return;
+  horlogeInvitations = setInterval(async () => {
+    const r = await appel('GET', '/invitations');
+    if (r.ok && (r.donnees.invitations || []).length) surInvitation(r.donnees.invitations);
+  }, 10000);
+}
+
+function arreterInvitations() {
+  if (horlogeInvitations) clearInterval(horlogeInvitations);
+  horlogeInvitations = null;
+}
 
 function demarrerBattement() {
   arreterBattement();
@@ -257,6 +283,7 @@ module.exports = {
   signalerJeu,
   surChangement: (f) => { prevenir = f; },
   surMessages: (f) => { surMessages = f; },
+  surInvitation: (f) => { surInvitation = f; },
 
   amis: () => appel('GET', '/amis'),
   ajouterAmi: (code) => appel('POST', '/amis/demande', { corps: { code } }),
@@ -264,6 +291,10 @@ module.exports = {
   retirerAmi: (id) => appel('POST', '/amis/retirer', { corps: { id } }),
   bloquer: (id, actif) => appel('POST', '/blocages', { corps: { id, bloquer: actif } }),
   signaler: (id, motif) => appel('POST', '/signalement', { corps: { id, motif } }),
+
+  inviter: (vers, jeu) => appel('POST', '/invitations', { corps: { vers, jeu } }),
+  invitations: () => appel('GET', '/invitations'),
+  invitationVue: (id) => appel('POST', '/invitations/vue', { corps: { id } }),
 
   messages: (avec, depuis = 0) => appel(
     'GET', `/messages?avec=${encodeURIComponent(avec)}&depuis=${depuis}`,

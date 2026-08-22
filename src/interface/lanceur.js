@@ -97,6 +97,8 @@ const TEXTES = {
     horsLigne: 'Hors ligne',
     joueA: 'joue à',
     ecrire: 'Écrire',
+    inviter: 'Inviter',
+    invitationPartie: 'Invitation envoyée',
     votreMessage: 'Votre message…',
     envoyer: 'Envoyer',
     retirer: 'Retirer de mes amis',
@@ -216,6 +218,8 @@ const TEXTES = {
     horsLigne: 'Offline',
     joueA: 'playing',
     ecrire: 'Message',
+    inviter: 'Invite',
+    invitationPartie: 'Invitation sent',
     votreMessage: 'Your message…',
     envoyer: 'Send',
     retirer: 'Remove friend',
@@ -258,6 +262,10 @@ let etat = {
   ouverts: [],
   joignables: {},   // id -> true | false | undefined (pas encore vérifié)
   choisi: null,
+  jeuOuvert: null,  // identifiant du jeu en cours, pour proposer d'inviter
+  // Invitations envoyées récemment : le libellé du bouton en dépend, plutôt
+  // que d'une mutation du bouton lui-même — que le premier redessin efface.
+  invitees: new Map(),
   vue: 'accueil',   // 'accueil', 'jeu' ou 'amis'
   actualites: null,
   classement: null,
@@ -822,8 +830,33 @@ function dessinerListeAmis(scene) {
     const liste = document.createElement('div');
     liste.className = 'amis-grille';
     for (const a of d.amis) {
-      liste.append(carteAmi(a, [
-        [t.ecrire, 'principal', () => ouvrirConversation(a.id)],
+      const actions = [[t.ecrire, 'principal', () => ouvrirConversation(a.id)]];
+
+      // Inviter n'a de sens que si une partie tourne : sinon il n'y a rien à
+      // rejoindre, et le bouton mentirait.
+      if (etat.jeuOuvert) {
+        const nom = etat.catalogue.jeux.find((j) => j.id === etat.jeuOuvert)?.nom
+          || etat.jeuOuvert;
+        const envoyee = etat.invitees.get(a.id);
+        actions.push([
+          envoyee ? t.invitationPartie : `${t.inviter} · ${nom}`,
+          'discret',
+          async () => {
+            if (etat.invitees.has(a.id)) return;
+            etat.invitees.set(a.id, Date.now());
+            dessinerAmis();
+            await window.ludopia.social.inviter(a.id, etat.jeuOuvert);
+            // Le bouton redevient proposable au bout de quelques secondes :
+            // laisser « envoyée » à demeure empêcherait de réinviter.
+            setTimeout(() => {
+              etat.invitees.delete(a.id);
+              if (etat.vue === 'amis' && !etat.conversation) dessinerAmis();
+            }, 8000);
+          },
+        ]);
+      }
+
+      actions.push(
         [t.bloquerAmi, 'discret', async () => {
           if (!window.confirm(t.confirmerBlocage)) return;
           await window.ludopia.social.bloquer(a.id, true);
@@ -838,7 +871,8 @@ function dessinerListeAmis(scene) {
           dessinerAmis();
           window.alert(t.signalementEnvoye);
         }],
-      ]));
+      );
+      liste.append(carteAmi(a, actions));
     }
     bloc.append(liste);
   }
@@ -885,9 +919,20 @@ function dessinerListeAmis(scene) {
 
 function dessinerConversation(scene) {
   const t = T();
-  const ami = (etat.amis?.amis || []).find((a) => a.id === etat.conversation);
+  /* On ne referme pas une conversation ouverte parce que la liste d'amis est
+     momentanément absente — un rafraîchissement en échec, une réponse lente du
+     service — sinon l'utilisateur voit son fil disparaître en pleine
+     discussion. On ne la referme que si la personne n'est vraiment plus une
+     amie, c'est-à-dire quand la liste est là et ne la contient pas. */
+  const liste = etat.amis?.amis;
+  const ami = (liste || []).find((a) => a.id === etat.conversation)
+    // Faute de liste, on se contente de ce que l'on sait déjà : le pseudo lu
+    // dans les messages échangés.
+    || (liste ? null : { id: etat.conversation, pseudo: '…', enLigne: false, vuLe: 0 });
+
   if (!ami) {
     etat.conversation = null;
+    window.ludopia.social.conversationAffichee(null);
     dessinerListeAmis(scene);
     return;
   }
@@ -1582,6 +1627,8 @@ async function demarrer() {
 
   $('#version').textContent = `${T().lanceur} ${depart.versionLanceur}`;
 
+  etat.jeuOuvert = depart.ouverts[0] || null;
+
   await rafraichirStats();
   appliquerLangue();
   ouvrirAccueil();
@@ -1649,6 +1696,7 @@ async function demarrer() {
 
   window.ludopia.surChangementJeux(async (ouverts) => {
     etat.ouverts = ouverts;
+    etat.jeuOuvert = ouverts[0] || null;
     await rafraichirStats();
     redessiner();
   });
