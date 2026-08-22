@@ -130,6 +130,9 @@ const TEXTES = {
     serieAVous: 'Votre série tient encore aujourd’hui — il ne manque que vous.',
     serieAlui: (n) => `Série de ${n} jour${n > 1 ? 's' : ''} en péril : il manque votre ami aujourd’hui.`,
     boutique: 'Boutique',
+    surimpressionTitre: 'Tchat sur le jeu (F10)',
+    surimpressionAide: 'Une petite fenêtre déplaçable, par-dessus la partie : les messages '
+      + 'des amis, et de quoi répondre sans quitter le jeu. F10 la montre et la cache.',
     themeTitre: 'Apparence',
     themeAide: 'Suivre le système, ou choisir. Le changement est immédiat.',
     themeSysteme: 'Système',
@@ -319,6 +322,9 @@ const TEXTES = {
     serieAVous: 'Your streak still stands today — only you are missing.',
     serieAlui: (n) => `${n}-day streak at risk: your friend has not played today.`,
     boutique: 'Shop',
+    surimpressionTitre: 'In-game chat (F10)',
+    surimpressionAide: 'A small movable window over your game: friends’ messages, and a '
+      + 'field to reply without leaving. F10 shows and hides it.',
     themeTitre: 'Appearance',
     themeAide: 'Follow the system, or choose. The change is immediate.',
     themeSysteme: 'System',
@@ -1334,6 +1340,8 @@ function dessinerReglages() {
 
   blocLanceur.append(ligneReglage(t.demarrerReduit, t.demarrerReduitAide,
     interrupteur(r.demarrerReduit, (v) => enregistrerReglage('demarrerReduit', v))));
+  blocLanceur.append(ligneReglage(t.surimpressionTitre, t.surimpressionAide,
+    interrupteur(r.surimpression, (v) => enregistrerReglage('surimpression', v))));
 
   const langue = document.createElement('button');
   langue.type = 'button';

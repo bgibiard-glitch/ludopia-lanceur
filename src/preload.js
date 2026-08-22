@@ -146,6 +146,11 @@ contextBridge.exposeInMainWorld('ludopia', {
     offrir: (vers, montant, mot) => ipcRenderer.invoke('bourse:offrir', vers, montant, mot),
   },
 
+  surimpression: {
+    basculer: () => ipcRenderer.send('surimpression:basculer'),
+    masquer: () => ipcRenderer.send('surimpression:masquer'),
+  },
+
   theme: {
     etat: () => ipcRenderer.invoke('theme:etat'),
     surChangement: (rappel) => {

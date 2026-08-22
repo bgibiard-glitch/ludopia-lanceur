@@ -11,6 +11,7 @@
 
 const {
   app, BrowserWindow, shell, ipcMain, Menu, Tray, nativeImage, net, dialog, nativeTheme,
+  globalShortcut, screen,
 } = require('electron');
 const path = require('node:path');
 const fs = require('node:fs');
@@ -96,6 +97,55 @@ let fenetreBibliotheque = null;
 /* De quoi refermer l'avis d'un appel qui n'a plus lieu d'être : une sonnerie
    par appel, retirée dès qu'il se termine. */
 const sonneriesEnCours = new Map();
+
+let fenetreSurimpression = null;
+
+/**
+ * Le tchat en surimpression : une fenêtre sans cadre, translucide, toujours
+ * au-dessus — y compris d'un jeu en plein écran sans bordure — qu'on déplace
+ * par sa poignée.
+ *
+ * Elle est créée à la demande et **masquée** plutôt que détruite : la
+ * recréation d'une fenêtre transparente coûte une seconde visible, et F10
+ * doit répondre au doigt.
+ */
+function basculerSurimpression() {
+  if (fenetreSurimpression && !fenetreSurimpression.isDestroyed()) {
+    if (fenetreSurimpression.isVisible()) fenetreSurimpression.hide();
+    else fenetreSurimpression.showInactive();
+    return;
+  }
+
+  const zone = screen.getPrimaryDisplay().workArea;
+  fenetreSurimpression = new BrowserWindow({
+    width: 340,
+    height: 380,
+    x: zone.x + zone.width - 360,
+    y: zone.y + zone.height - 400,
+    frame: false,
+    transparent: true,
+    resizable: true,
+    minWidth: 260,
+    minHeight: 220,
+    skipTaskbar: true,
+    /* `screen-saver` est le niveau qui passe au-dessus d'un jeu en plein écran
+       fenêtré. Un vrai plein écran exclusif ne laisse rien passer, quel que
+       soit le niveau — c'est une limite du système, pas un réglage. */
+    alwaysOnTop: true,
+    webPreferences: {
+      preload: path.join(__dirname, 'preload.js'),
+      contextIsolation: true,
+      nodeIntegration: false,
+      sandbox: true,
+      spellcheck: false,
+    },
+  });
+  fenetreSurimpression.setAlwaysOnTop(true, 'screen-saver');
+  // Elle ne vole jamais le focus à l'ouverture : on est en train de jouer.
+  fenetreSurimpression.loadFile(path.join(__dirname, 'interface', 'surimpression.html'));
+  fenetreSurimpression.once('ready-to-show', () => fenetreSurimpression.showInactive());
+  fenetreSurimpression.on('closed', () => { fenetreSurimpression = null; });
+}
 let plateau = null;                       // icône de la zone de notification
 const fenetresJeu = new Map();            // id du jeu -> BrowserWindow
 const chronos = new Map();                // id du jeu -> horodatage de lancement
@@ -588,6 +638,13 @@ function brancherIpc() {
     donnees.set('reglages', { ...reglages(), ...valeurs });
     avis.reglages(reglages());
     if ('theme' in valeurs) appliquerTheme();
+    if ('surimpression' in valeurs) {
+      globalShortcut.unregister('F10');
+      if (valeurs.surimpression) globalShortcut.register('F10', basculerSurimpression);
+      else if (fenetreSurimpression && !fenetreSurimpression.isDestroyed()) {
+        fenetreSurimpression.hide();
+      }
+    }
     return reglages();
   });
   ipcMain.handle('donnees:dossier', () => app.getPath('userData'));
@@ -657,6 +714,29 @@ function brancherIpc() {
   nativeTheme.on('updated', () => {
     if (reglages().theme !== 'systeme') return;
     appliquerTheme();
+  });
+
+  /* F10 bascule la surimpression. Le raccourci n'existe que si le réglage est
+     allumé : un raccourci global mange la touche pour tout le système, et
+     personne n'aime perdre F10 au profit d'une fenêtre qu'il n'a pas demandée. */
+  const poserRaccourci = () => {
+    globalShortcut.unregister('F10');
+    if (reglages().surimpression) {
+      globalShortcut.register('F10', basculerSurimpression);
+    }
+  };
+  poserRaccourci();
+  ipcMain.on('surimpression:reglageChange', poserRaccourci);
+
+  // Le même geste que F10, pour le bouton des réglages — et parce qu'un
+  // raccourci global ne se déclenche pas depuis un clavier synthétique, ce
+  // qui rend F10 invérifiable automatiquement. Le verbe, lui, l'est.
+  ipcMain.on('surimpression:basculer', basculerSurimpression);
+
+  ipcMain.on('surimpression:masquer', () => {
+    if (fenetreSurimpression && !fenetreSurimpression.isDestroyed()) {
+      fenetreSurimpression.hide();
+    }
   });
 
   /* Les serveurs et tout ce qui les entoure. Un relais direct : la logique
@@ -792,6 +872,11 @@ app.whenReady().then(async () => {
 
     if (fenetreBibliotheque && !fenetreBibliotheque.isDestroyed()) {
       fenetreBibliotheque.webContents.send('social:nouveauxMessages', recus);
+    }
+    // La surimpression aussi : c'est même toute sa raison d'être — elle vit
+    // précisément quand la fenêtre principale est derrière le jeu.
+    if (fenetreSurimpression && !fenetreSurimpression.isDestroyed()) {
+      fenetreSurimpression.webContents.send('social:nouveauxMessages', recus);
     }
   });
 
