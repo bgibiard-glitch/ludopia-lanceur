@@ -29,6 +29,8 @@ let jeuEnCours = null;
 let prevenir = () => {};
 let surMessages = () => {};
 let surInvitation = () => {};
+let surMessageSalon = () => {};
+let vusParSalon = new Map();
 let horlogeInvitations = null;
 let dernierVu = 0;
 let ecouteActive = false;
@@ -166,12 +168,38 @@ function demarrerInvitations() {
   horlogeInvitations = setInterval(async () => {
     const r = await appel('GET', '/invitations');
     if (r.ok && (r.donnees.invitations || []).length) surInvitation(r.donnees.invitations);
+
+    /* Les salons, relevés au même rythme. On ne garde pas une requête ouverte
+       par salon : quelqu'un qui en a dix ouvrirait dix connexions permanentes
+       pour une information qui supporte dix secondes de retard. */
+    const sal = await appel('GET', '/salons');
+    if (!sal.ok) return;
+    for (const s2 of sal.donnees.salons || []) {
+      const vu = vusParSalon.get(s2.id);
+      // Premier passage : on note où l'on en est sans rien signaler, sinon
+      // toute conversation existante remonterait d'un coup au démarrage.
+      if (vu === undefined) {
+        vusParSalon.set(s2.id, s2.lu_le || 0);
+        continue;
+      }
+      if (s2.nonLus > 0) {
+        const fil = await appel(
+          'GET', `/salons/messages?salon=${encodeURIComponent(s2.id)}&depuis=${vu}`,
+        );
+        const neufs = (fil.donnees?.messages || []).filter((m) => m.auteur !== moi?.id);
+        if (neufs.length) {
+          vusParSalon.set(s2.id, neufs.reduce((n, m) => Math.max(n, m.id), vu));
+          surMessageSalon(s2, neufs);
+        }
+      }
+    }
   }, 10000);
 }
 
 function arreterInvitations() {
   if (horlogeInvitations) clearInterval(horlogeInvitations);
   horlogeInvitations = null;
+  vusParSalon = new Map();
 }
 
 function demarrerBattement() {
@@ -284,6 +312,8 @@ module.exports = {
   surChangement: (f) => { prevenir = f; },
   surMessages: (f) => { surMessages = f; },
   surInvitation: (f) => { surInvitation = f; },
+  surMessageSalon: (f) => { surMessageSalon = f; },
+  salonVu: (id, jusqu) => vusParSalon.set(id, jusqu),
 
   amis: () => appel('GET', '/amis'),
   ajouterAmi: (code) => appel('POST', '/amis/demande', { corps: { code } }),
@@ -313,6 +343,8 @@ module.exports = {
   ),
   ecrireSalon: (salon, texte) => appel('POST', '/salons/messages', { corps: { salon, texte } }),
   salonLu: (salon, jusqu) => appel('POST', '/salons/lu', { corps: { salon, jusqu } }),
+  inviterDansSalon: (salon, ami) => appel('POST', '/salons/inviter', { corps: { salon, ami } }),
+  exclureDuSalon: (salon, membre) => appel('POST', '/salons/exclure', { corps: { salon, membre } }),
 
   // --- réactions, statut, profil ---
   reagir: (sorte, message, emoji) =>

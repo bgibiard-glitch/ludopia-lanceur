@@ -35,6 +35,7 @@ const fenetresJeu = new Map();            // id du jeu -> BrowserWindow
 const chronos = new Map();                // id du jeu -> horodatage de lancement
 let catalogue = null;
 let conversationOuverte = null;   // ce que l'interface affiche, pour les avis
+let salonAffiche = null;
 
 // =============================================================================
 // Catalogue
@@ -521,6 +522,10 @@ function brancherIpc() {
     social.attendreSalon(salon, depuis));
   ipcMain.handle('social:ecrireSalon', (_e, salon, texte) => social.ecrireSalon(salon, texte));
   ipcMain.handle('social:salonLu', (_e, salon, jusqu) => social.salonLu(salon, jusqu));
+  ipcMain.handle('social:inviterDansSalon', (_e, salon, ami) =>
+    social.inviterDansSalon(salon, ami));
+  ipcMain.handle('social:exclureDuSalon', (_e, salon, membre) =>
+    social.exclureDuSalon(salon, membre));
 
   ipcMain.handle('social:reagir', (_e, sorte, message, emoji) =>
     social.reagir(sorte, message, emoji));
@@ -544,6 +549,12 @@ function brancherIpc() {
   // L'interface dit ce qu'elle affiche : sans cela, un avis partirait pour un
   // message déjà sous les yeux.
   ipcMain.on('social:conversationAffichee', (_e, id) => { conversationOuverte = id || null; });
+  ipcMain.on('social:salonAffiche', (_e, id) => {
+    salonAffiche = id || null;
+    // Lire un salon efface son avis : le laisser serait dire deux fois la
+    // même chose.
+    if (id) avis.vuePar(`salon:${id}`);
+  });
 
   ipcMain.handle('maj:etat', () => ({ ...maj.etat(), disponible: maj.disponible() }));
   ipcMain.handle('maj:chercher', () => maj.chercher(true, fenetreBibliotheque));
@@ -582,6 +593,19 @@ app.whenReady().then(async () => {
       && fenetreBibliotheque.isVisible() && !fenetreBibliotheque.isMinimized()
       && fenetreBibliotheque.isFocused()),
     conversation: () => conversationOuverte,
+    salon: () => salonAffiche,
+  });
+
+  social.surMessageSalon((salon, messages) => {
+    avis.messageSalonRecu(salon, messages, (id) => {
+      montrerBibliotheque();
+      if (fenetreBibliotheque && !fenetreBibliotheque.isDestroyed()) {
+        fenetreBibliotheque.webContents.send('social:ouvrirSalon', id);
+      }
+    });
+    if (fenetreBibliotheque && !fenetreBibliotheque.isDestroyed()) {
+      fenetreBibliotheque.webContents.send('social:nouveauxMessages', messages);
+    }
   });
 
   social.surMessages(async (recus) => {

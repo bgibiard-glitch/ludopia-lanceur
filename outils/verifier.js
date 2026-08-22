@@ -127,6 +127,16 @@ function verifier(intitule, condition, detail = '') {
   await bibliotheque.waitForTimeout(1200);
   const etatRail = await entrees.nth(0).getAttribute('data-etat');
   verifier('la bibliothèque signale la partie en cours', etatRail === 'joue', `état = ${etatRail}`);
+  /* On dit ce qui est affiché avant de juger le bouton : `.jouer` habille aussi
+     le bouton du formulaire de connexion, et un échec sans contexte laissait
+     croire à une régression là où il n'y avait qu'un temps d'attente trop court. */
+  const scene = await bibliotheque.evaluate(() => ({
+    vue: window.__vue ?? 'inconnue',
+    titre: document.querySelector('#scene h1')?.textContent,
+  })).catch((e) => ({ erreur: e.message }));
+  verifier('la scène affiche bien la fiche du jeu',
+    scene.vue === 'jeu' && scene.titre === 'World Blocks', JSON.stringify(scene));
+
   const boutonMaintenant = await bibliotheque.locator('.jouer').textContent();
   verifier('le bouton devient « Revenir au jeu »',
     boutonMaintenant.trim() === 'Revenir au jeu', boutonMaintenant.trim());

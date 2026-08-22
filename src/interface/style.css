@@ -1823,3 +1823,19 @@ body.avec-chats .cadre {
   font-style: normal;
   color: var(--muted);
 }
+
+/* --- volet d'invitation dans un salon --- */
+
+.salon-invite {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding: 0.9rem 0 0.2rem;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 0.4rem;
+}
+/* Un ami déjà présent reste visible mais inerte : le retirer de la liste
+   ferait douter qu'il soit bien dans le salon. */
+.salon-invite .btn-mini:disabled {
+  opacity: 0.45;
+}

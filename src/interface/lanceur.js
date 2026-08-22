@@ -86,6 +86,10 @@ const TEXTES = {
     rejoindre: 'Rejoindre',
     codeSalon: 'Code',
     quitterSalon: 'Quitter',
+    inviterAmis: 'Inviter des amis',
+    dejaDedans: 'déjà dans le salon',
+    ajoute: 'Ajouté',
+    membresDuSalon: 'Membres',
     confirmerQuitter: 'Quitter ce salon ? Vous ne verrez plus ses messages.',
     salonVide: 'Personne n’a encore rien dit. À vous.',
     membres: 'membres',
@@ -239,6 +243,10 @@ const TEXTES = {
     rejoindre: 'Join',
     codeSalon: 'Code',
     quitterSalon: 'Leave',
+    inviterAmis: 'Invite friends',
+    dejaDedans: 'already in the room',
+    ajoute: 'Added',
+    membresDuSalon: 'Members',
     confirmerQuitter: 'Leave this room? You will stop seeing its messages.',
     salonVide: 'Nobody has said anything yet. Go ahead.',
     membres: 'members',
@@ -335,6 +343,7 @@ let etat = {
   messagesSalon: [],
   reactionsSalon: [],
   membresSalon: [],
+  inviteEnCours: false,   // volet « inviter des amis » déplié
   reactionsDirectes: [],
   profil: null,
   recherche: '',          // filtre de la bibliothèque
@@ -761,6 +770,8 @@ async function rafraichirFilSalon() {
 async function ouvrirSalon(id) {
   etat.vue = 'salon';
   etat.salon = id;
+  etat.inviteEnCours = false;
+  window.ludopia.social.salonAffiche(id);
   etat.conversation = null;
   etat.messagesSalon = [];
   etat.reactionsSalon = [];
@@ -867,6 +878,19 @@ function dessinerSalon() {
     outils.append(code);
   }
 
+  /* Inviter directement plutôt que de transmettre un code : c'est le geste
+     naturel quand la personne est déjà dans sa liste d'amis. Le code reste
+     là pour ceux qui ne le sont pas encore. */
+  const inviter = document.createElement('button');
+  inviter.type = 'button';
+  inviter.className = 'btn-mini';
+  inviter.textContent = t.inviterAmis;
+  inviter.addEventListener('click', () => {
+    etat.inviteEnCours = !etat.inviteEnCours;
+    dessinerSalon();
+  });
+  outils.append(inviter);
+
   const partir = document.createElement('button');
   partir.type = 'button';
   partir.className = 'btn-mini';
@@ -882,6 +906,38 @@ function dessinerSalon() {
 
   tete.append(outils);
   bloc.append(tete);
+
+  // --- volet d'invitation ---
+  if (etat.inviteEnCours) {
+    const volet = document.createElement('div');
+    volet.className = 'salon-invite';
+
+    const dedans = new Set(etat.membresSalon.map((m) => m.id));
+    const amis = (etat.amis?.amis || []);
+
+    if (!amis.length) {
+      volet.append(bulle(t.aucunAmi, 'calme'));
+    } else {
+      for (const a of amis) {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'btn-mini';
+        b.disabled = dedans.has(a.id);
+        b.textContent = dedans.has(a.id) ? `${a.pseudo} — ${t.dejaDedans}` : a.pseudo;
+        b.addEventListener('click', async () => {
+          b.disabled = true;
+          b.textContent = `${a.pseudo} — ${t.ajoute}`;
+          await window.ludopia.social.inviterDansSalon(salon.id, a.id);
+          const m = await window.ludopia.social.membresSalon(salon.id);
+          if (m.ok) etat.membresSalon = m.donnees.membres || [];
+          await rafraichirFilSalon();
+          await rafraichirSalons();
+        });
+        volet.append(b);
+      }
+    }
+    bloc.append(volet);
+  }
 
   // --- fil ---
   const fil = document.createElement('div');
@@ -1999,6 +2055,7 @@ function dessinerSalons() {
 function ouvrirLesSalons() {
   etat.vue = 'salons';
   etat.salon = null;
+  window.ludopia.social.salonAffiche(null);
   etat.conversation = null;
   window.ludopia.social.conversationAffichee(null);
   dessinerSalons();
@@ -2018,6 +2075,7 @@ function ouvrirLesSalons() {
 function ouvrirAmis() {
   etat.vue = 'amis';
   etat.conversation = null;
+  window.ludopia.social.salonAffiche(null);
   window.ludopia.social.conversationAffichee(null);
   dessinerAmis();
   if (etat.social.connecte) {
@@ -2398,6 +2456,7 @@ function choisir(id) {
 
 /** Redessine la vue courante — accueil, amis ou fiche de jeu. */
 function redessiner() {
+  window.__vue = etat.vue;
   dessinerRail();
   dessinerChats();
   if (etat.vue === 'accueil') dessinerAccueil();
@@ -2539,6 +2598,10 @@ async function demarrer() {
 
   window.ludopia.social.surOuvertureDemandee((idAmi) => {
     ouvrirConversation(idAmi);
+  });
+
+  window.ludopia.social.surOuvertureSalon((idSalon) => {
+    rafraichirSalons().then(() => ouvrirSalon(idSalon));
   });
 
   window.ludopia.social.surNouveauxMessages(async () => {

@@ -30,6 +30,7 @@ const enCours = new Map();
 let ouvrirConversation = () => {};
 let fenetreVisible = () => false;
 let conversationOuverte = () => null;
+let salonOuvert = () => null;
 
 let icone = null;
 function iconeAvis() {
@@ -114,6 +115,38 @@ function invitationRecue(ami, jeu, nomDuJeu, rejoindre) {
   enCours.set(cle, avis);
 }
 
+/**
+ * Un ou plusieurs messages dans un salon.
+ *
+ * Le titre porte le nom du salon, pas celui de l'auteur : c'est le lieu qu'on
+ * reconnaît d'abord, et plusieurs personnes peuvent y avoir parlé.
+ */
+function messageSalonRecu(salon, messages, ouvrir) {
+  if (!Notification.isSupported() || !messages.length) return;
+  if (fenetreVisible() && salonOuvert() === salon.id) return;
+
+  const cle = `salon:${salon.id}`;
+  const precedent = enCours.get(cle);
+  if (precedent) precedent.close();
+
+  const dernier = messages[messages.length - 1];
+  const corps = messages.length === 1
+    ? `${dernier.pseudo} : ${dernier.texte}`
+    : `${messages.length} messages · ${dernier.pseudo} : ${dernier.texte}`;
+
+  const avis = new Notification({
+    title: `${salon.emoji || '🎮'} ${salon.nom}`,
+    body: corps.slice(0, 220),
+    icon: iconeAvis(),
+    silent: false,
+  });
+
+  avis.on('click', () => { enCours.delete(cle); ouvrir(salon.id); });
+  avis.on('close', () => enCours.delete(cle));
+  avis.show();
+  enCours.set(cle, avis);
+}
+
 /** Retire l'avis d'une personne dont on vient d'ouvrir la conversation. */
 function vuePar(idAmi) {
   const a = enCours.get(idAmi);
@@ -123,10 +156,13 @@ function vuePar(idAmi) {
   }
 }
 
-function brancher({ ouvrir, visible, conversation }) {
+function brancher({ ouvrir, visible, conversation, salon }) {
   ouvrirConversation = ouvrir;
   fenetreVisible = visible;
   conversationOuverte = conversation;
+  if (salon) salonOuvert = salon;
 }
 
-module.exports = { brancher, messageRecu, invitationRecue, vuePar };
+module.exports = {
+  brancher, messageRecu, messageSalonRecu, invitationRecue, vuePar,
+};

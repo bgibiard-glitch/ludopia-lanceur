@@ -54,6 +54,10 @@ contextBridge.exposeInMainWorld('ludopia', {
     attendreSalon: (salon, depuis) => ipcRenderer.invoke('social:attendreSalon', salon, depuis),
     ecrireSalon: (salon, texte) => ipcRenderer.invoke('social:ecrireSalon', salon, texte),
     salonLu: (salon, jusqu) => ipcRenderer.invoke('social:salonLu', salon, jusqu),
+    inviterDansSalon: (salon, ami) =>
+      ipcRenderer.invoke('social:inviterDansSalon', salon, ami),
+    exclureDuSalon: (salon, membre) =>
+      ipcRenderer.invoke('social:exclureDuSalon', salon, membre),
 
     reagir: (sorte, message, emoji) => ipcRenderer.invoke('social:reagir', sorte, message, emoji),
     reactions: (avec) => ipcRenderer.invoke('social:reactions', avec),
@@ -91,6 +95,13 @@ contextBridge.exposeInMainWorld('ludopia', {
     /** Dit au processus principal ce qui est affiché, pour qu'il n'envoie pas
      *  d'avis sur une conversation déjà sous les yeux. */
     conversationAffichee: (id) => ipcRenderer.send('social:conversationAffichee', id),
+    salonAffiche: (id) => ipcRenderer.send('social:salonAffiche', id),
+
+    surOuvertureSalon: (rappel) => {
+      const ecouteur = (_evt, id) => rappel(id);
+      ipcRenderer.on('social:ouvrirSalon', ecouteur);
+      return () => ipcRenderer.removeListener('social:ouvrirSalon', ecouteur);
+    },
   },
 
   majEtat: () => ipcRenderer.invoke('maj:etat'),
