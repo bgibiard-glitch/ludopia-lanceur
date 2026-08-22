@@ -132,6 +132,14 @@ const TEXTES = {
     boutique: 'Boutique',
     editerProfil: 'Personnaliser',
     offrirLudos: 'Offrir des Ludos',
+    passeportTitre: 'Passeport public',
+    passeportAide: 'Une page web à partager : votre niveau, vos jeux, ce que vous portez. '
+      + 'Jamais votre présence en direct ni vos amis. Fermé par défaut.',
+    passeportAdresse: 'votre-adresse',
+    passeportOuvrir: 'Ouvrir mon passeport',
+    passeportFermer: 'Le fermer',
+    passeportCopier: 'Copier le lien',
+    passeportCopie: 'Lien copié !',
     avisSeries: 'Séries en péril',
     avisSeriesAide: 'Le soir, vous prévenir quand une série d’amitié se rompt si vous ne jouez pas tous les deux.',
     offrirCombien: 'Combien ?',
@@ -341,6 +349,14 @@ const TEXTES = {
     boutique: 'Shop',
     editerProfil: 'Customise',
     offrirLudos: 'Gift Ludos',
+    passeportTitre: 'Public passport',
+    passeportAide: 'A web page to share: your level, your games, what you wear. '
+      + 'Never your live presence or your friends. Closed by default.',
+    passeportAdresse: 'your-address',
+    passeportOuvrir: 'Open my passport',
+    passeportFermer: 'Close it',
+    passeportCopier: 'Copy the link',
+    passeportCopie: 'Link copied!',
     avisSeries: 'Streaks at risk',
     avisSeriesAide: 'In the evening, warn you when a friendship streak will break unless you both play.',
     offrirCombien: 'How many?',
@@ -1566,6 +1582,71 @@ function ouvrirEditionProfil(p) {
   bio.rows = 2;
   bio.value = brouillon.bio;
   carte.append(bio);
+
+  // --- le passeport public ---
+  const h3e = document.createElement('h3');
+  h3e.className = 'profil-sous';
+  h3e.textContent = t.passeportTitre;
+  carte.append(h3e);
+
+  const aidePasseport = document.createElement('p');
+  aidePasseport.className = 'acc-note';
+  aidePasseport.textContent = t.passeportAide;
+  carte.append(aidePasseport);
+
+  const zonePasseport = document.createElement('div');
+  zonePasseport.className = 'srv-code-form';
+
+  const champAdresse = document.createElement('input');
+  champAdresse.type = 'text';
+  champAdresse.maxLength = 30;
+  champAdresse.placeholder = t.passeportAdresse;
+  champAdresse.style.textTransform = 'lowercase';
+  zonePasseport.append(champAdresse);
+
+  const boutonPasseport = document.createElement('button');
+  boutonPasseport.type = 'button';
+  boutonPasseport.className = 'btn-mini';
+  boutonPasseport.textContent = t.passeportOuvrir;
+  zonePasseport.append(boutonPasseport);
+  carte.append(zonePasseport);
+
+  const zoneLien = document.createElement('div');
+  carte.append(zoneLien);
+
+  let passeportOuvert = false;
+
+  const peindrePasseport = (d) => {
+    passeportOuvert = Boolean(d.public);
+    if (d.adresse) champAdresse.value = d.adresse;
+    boutonPasseport.textContent = passeportOuvert ? t.passeportFermer : t.passeportOuvrir;
+    zoneLien.textContent = '';
+    if (passeportOuvert && d.lien) {
+      const copier = document.createElement('button');
+      copier.type = 'button';
+      copier.className = 'btn-mini';
+      copier.textContent = `🔗 ${t.passeportCopier}`;
+      copier.addEventListener('click', async () => {
+        await navigator.clipboard.writeText(d.lien);
+        copier.textContent = `✓ ${t.passeportCopie}`;
+        setTimeout(() => { copier.textContent = `🔗 ${t.passeportCopier}`; }, 1600);
+      });
+      zoneLien.append(copier);
+    }
+  };
+
+  // L'état courant, sans rien changer : un envoi vide relit la fiche.
+  window.ludopia.social.passeport({}).then((r) => { if (r.ok) peindrePasseport(r.donnees); });
+
+  boutonPasseport.addEventListener('click', async () => {
+    zoneLien.textContent = '';
+    const r = await window.ludopia.social.passeport({
+      public: !passeportOuvert,
+      adresse: champAdresse.value.trim() || undefined,
+    });
+    if (!r.ok) { zoneLien.append(bulle(messageErreur(r.erreur, r.detail))); return; }
+    peindrePasseport(r.donnees);
+  });
 
   const retour = document.createElement('div');
   carte.append(retour);

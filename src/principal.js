@@ -744,6 +744,7 @@ function brancherIpc() {
      vit côté service, et l'interface parle au processus principal qui tient le
      jeton. */
   ipcMain.handle('social:modifierProfil', (_e, d) => social.modifierProfil(d));
+  ipcMain.handle('social:passeport', (_e, d) => social.definirPasseport(d));
   ipcMain.handle('srv:liste', () => social.mesServeurs());
   ipcMain.handle('srv:creer', (_e, d) => social.creerServeur(d));
   ipcMain.handle('srv:rejoindre', (_e, d) => social.rejoindreServeur(d));
