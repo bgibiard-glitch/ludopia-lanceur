@@ -42,6 +42,24 @@ contextBridge.exposeInMainWorld('ludopia', {
     bloquer: (id, actif) => ipcRenderer.invoke('social:bloquer', id, actif),
     signaler: (id, motif) => ipcRenderer.invoke('social:signaler', id, motif),
     inviter: (vers, jeu) => ipcRenderer.invoke('social:inviter', vers, jeu),
+
+    salons: () => ipcRenderer.invoke('social:salons'),
+    creerSalon: (nom, emoji) => ipcRenderer.invoke('social:creerSalon', nom, emoji),
+    rejoindreSalon: (code) => ipcRenderer.invoke('social:rejoindreSalon', code),
+    quitterSalon: (salon) => ipcRenderer.invoke('social:quitterSalon', salon),
+    renommerSalon: (salon, nom, emoji) =>
+      ipcRenderer.invoke('social:renommerSalon', salon, nom, emoji),
+    membresSalon: (salon) => ipcRenderer.invoke('social:membresSalon', salon),
+    messagesSalon: (salon, depuis) => ipcRenderer.invoke('social:messagesSalon', salon, depuis),
+    attendreSalon: (salon, depuis) => ipcRenderer.invoke('social:attendreSalon', salon, depuis),
+    ecrireSalon: (salon, texte) => ipcRenderer.invoke('social:ecrireSalon', salon, texte),
+    salonLu: (salon, jusqu) => ipcRenderer.invoke('social:salonLu', salon, jusqu),
+
+    reagir: (sorte, message, emoji) => ipcRenderer.invoke('social:reagir', sorte, message, emoji),
+    reactions: (avec) => ipcRenderer.invoke('social:reactions', avec),
+    statut: (statut) => ipcRenderer.invoke('social:statut', statut),
+    profil: (de) => ipcRenderer.invoke('social:profil', de),
+    emojis: () => ipcRenderer.invoke('social:emojis'),
     jeuOuvert: () => ipcRenderer.invoke('social:jeuOuvert'),
 
     messages: (avec, depuis) => ipcRenderer.invoke('social:messages', avec, depuis),

@@ -77,6 +77,38 @@ const TEXTES = {
     unJoueur: 'joueur',
     classementPortee: 'Comptes connectés au lanceur ayant ouvert un jeu, sur sept jours. Les joueurs du navigateur ne sont pas comptés — le service ne les voit pas.',
     classementVide: 'Pas encore assez de parties pour établir un classement.',
+    salons: 'Salons',
+    nouveauSalon: 'Nouveau salon',
+    rejoindreSalon: 'Rejoindre un salon',
+    nomDuSalon: 'Nom du salon',
+    codeDuSalon: 'Code du salon',
+    creer: 'Créer',
+    rejoindre: 'Rejoindre',
+    codeSalon: 'Code',
+    quitterSalon: 'Quitter',
+    confirmerQuitter: 'Quitter ce salon ? Vous ne verrez plus ses messages.',
+    salonVide: 'Personne n’a encore rien dit. À vous.',
+    membres: 'membres',
+    unMembre: 'membre',
+    aucunSalon: 'Aucun salon. Créez-en un, ou rejoignez celui d’un ami avec son code.',
+    salonsExplication: 'Un salon est un fil partagé entre amis. On n’y entre qu’avec son code : il n’existe aucune liste publique.',
+    emojis: 'Emojis',
+    reagir: 'Réagir',
+    monStatut: 'Votre statut',
+    statutExemple: 'Cherche des joueurs…',
+    enregistrer: 'Enregistrer',
+    voirProfil: 'Profil',
+    fermerProfil: 'Fermer',
+    niveau: 'Niveau',
+    joursDeJeu: 'Jours de jeu',
+    membreDepuis: 'Membre depuis',
+    joursVersNiveau: 'jours vers le niveau suivant',
+    parJeu: 'Par jeu',
+    jours: 'jours',
+    unJour: 'jour',
+    profilMesure: 'Le niveau vient des jours où un jeu a été ouvert depuis le lanceur, pas du temps passé — qui ne quitte pas votre machine.',
+    chercherJeu: 'Chercher un jeu…',
+    aucunResultat: 'Aucun jeu ne correspond.',
     dejaCompte: 'J’ai déjà un compte',
     pasDeCompte: 'Créer un compte',
     deconnexion: 'Se déconnecter',
@@ -198,6 +230,38 @@ const TEXTES = {
     unJoueur: 'player',
     classementPortee: 'Accounts signed in to the launcher that opened a game, over seven days. Browser players are not counted — the service does not see them.',
     classementVide: 'Not enough sessions yet to build a ranking.',
+    salons: 'Rooms',
+    nouveauSalon: 'New room',
+    rejoindreSalon: 'Join a room',
+    nomDuSalon: 'Room name',
+    codeDuSalon: 'Room code',
+    creer: 'Create',
+    rejoindre: 'Join',
+    codeSalon: 'Code',
+    quitterSalon: 'Leave',
+    confirmerQuitter: 'Leave this room? You will stop seeing its messages.',
+    salonVide: 'Nobody has said anything yet. Go ahead.',
+    membres: 'members',
+    unMembre: 'member',
+    aucunSalon: 'No rooms yet. Create one, or join a friend’s with their code.',
+    salonsExplication: 'A room is a shared thread between friends. You only get in with its code: there is no public list.',
+    emojis: 'Emoji',
+    reagir: 'React',
+    monStatut: 'Your status',
+    statutExemple: 'Looking for players…',
+    enregistrer: 'Save',
+    voirProfil: 'Profile',
+    fermerProfil: 'Close',
+    niveau: 'Level',
+    joursDeJeu: 'Days played',
+    membreDepuis: 'Member since',
+    joursVersNiveau: 'days to the next level',
+    parJeu: 'Per game',
+    jours: 'days',
+    unJour: 'day',
+    profilMesure: 'The level comes from the days a game was opened from the launcher, not from time spent — which never leaves your machine.',
+    chercherJeu: 'Search a game…',
+    aucunResultat: 'No game matches.',
     dejaCompte: 'I already have an account',
     pasDeCompte: 'Create an account',
     deconnexion: 'Sign out',
@@ -266,6 +330,14 @@ let etat = {
   // Invitations envoyées récemment : le libellé du bouton en dépend, plutôt
   // que d'une mutation du bouton lui-même — que le premier redessin efface.
   invitees: new Map(),
+  salons: [],
+  salon: null,            // salon affiché
+  messagesSalon: [],
+  reactionsSalon: [],
+  membresSalon: [],
+  reactionsDirectes: [],
+  profil: null,
+  recherche: '',          // filtre de la bibliothèque
   vue: 'accueil',   // 'accueil', 'jeu' ou 'amis'
   actualites: null,
   classement: null,
@@ -327,7 +399,17 @@ function libelleEtat(cle) {
 function dessinerRail() {
   const rail = $('#rail');
   rail.textContent = '';
+  const filtre = etat.recherche.trim().toLowerCase();
   $('#accueil')?.setAttribute('aria-current', String(etat.vue === 'accueil'));
+  const boutonSalons = $('#salonsBouton');
+  if (boutonSalons) {
+    boutonSalons.setAttribute('aria-current', String(etat.vue === 'salons'));
+    const n = etat.salons.reduce((t, sa) => t + (sa.nonLus || 0), 0);
+    boutonSalons.dataset.nonLus = n > 0 ? String(n) : '';
+    $('.rail-salons-libelle', boutonSalons).textContent = T().salons;
+    boutonSalons.hidden = !etat.social.connecte;
+  }
+
   const boutonAmis = $('#amis');
   if (boutonAmis) {
     boutonAmis.setAttribute('aria-current', String(etat.vue === 'amis'));
@@ -336,7 +418,22 @@ function dessinerRail() {
     $('.rail-amis-libelle', boutonAmis).textContent = T().amisTitre;
   }
 
-  for (const jeu of etat.catalogue.jeux) {
+  const visibles = filtre
+    ? etat.catalogue.jeux.filter((j) => {
+      const loc = j[etat.langue] || j.fr;
+      return `${j.nom} ${(loc.genres || []).join(' ')} ${loc.accroche || ''}`
+        .toLowerCase().includes(filtre);
+    })
+    : etat.catalogue.jeux;
+
+  if (!visibles.length) {
+    const vide = document.createElement('li');
+    vide.className = 'rail-vide';
+    vide.textContent = T().aucunResultat;
+    rail.append(vide);
+  }
+
+  for (const jeu of visibles) {
     const cle = etatJeu(jeu);
     const li = document.createElement('li');
     const bouton = document.createElement('button');
@@ -531,6 +628,499 @@ function dessinerScene() {
 
 
 
+
+// =============================================================================
+// Emojis
+// =============================================================================
+
+/* Liste servie par le service : la dupliquer ici la ferait diverger dès qu'on
+   en ajoute un. En attendant sa réponse, un repli suffit à ne pas afficher un
+   sélecteur vide. */
+let EMOJIS = ['👍', '❤️', '😂', '🔥', '🎉', '🎮', '🏆', '⚡'];
+
+/**
+ * Un sélecteur d'emojis, posé sous l'élément qui l'appelle.
+ *
+ * On n'ouvre qu'un sélecteur à la fois et on le referme au clic ailleurs :
+ * deux panneaux ouverts sur la même page n'ont aucun sens et l'un des deux
+ * finit toujours par rester coincé.
+ */
+let selecteurOuvert = null;
+
+function fermerSelecteur() {
+  if (selecteurOuvert) {
+    selecteurOuvert.remove();
+    selecteurOuvert = null;
+  }
+}
+
+document.addEventListener('click', (evt) => {
+  if (selecteurOuvert && !selecteurOuvert.contains(evt.target)
+      && !evt.target.closest('[data-ouvre-emojis]')) {
+    fermerSelecteur();
+  }
+});
+
+function ouvrirSelecteurEmojis(ancre, choisi) {
+  fermerSelecteur();
+
+  const panneau = document.createElement('div');
+  panneau.className = 'emojis';
+  for (const e of EMOJIS) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'emoji';
+    b.textContent = e;
+    b.addEventListener('click', () => {
+      choisi(e);
+      fermerSelecteur();
+    });
+    panneau.append(b);
+  }
+
+  document.body.append(panneau);
+  selecteurOuvert = panneau;
+
+  // Posé sous l'ancre, ramené dans la fenêtre s'il en sortait.
+  const r = ancre.getBoundingClientRect();
+  const largeur = panneau.offsetWidth;
+  const hauteur = panneau.offsetHeight;
+  const x = Math.min(Math.max(8, r.left), window.innerWidth - largeur - 8);
+  const y = r.bottom + hauteur + 8 > window.innerHeight
+    ? Math.max(8, r.top - hauteur - 6)
+    : r.bottom + 6;
+  panneau.style.left = `${x}px`;
+  panneau.style.top = `${y}px`;
+}
+
+/** Les réactions d'un message, avec le compte et ce que j'ai posé moi-même. */
+function barreReactions(sorte, idMessage, reactions, apres) {
+  const miennes = reactions.filter((r) => Number(r.message) === Number(idMessage));
+
+  const barre = document.createElement('div');
+  barre.className = 'reactions';
+
+  for (const r of miennes) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = r.mienne ? 'reaction reaction--mienne' : 'reaction';
+    b.textContent = `${r.emoji} ${r.n}`;
+    b.addEventListener('click', async () => {
+      await window.ludopia.social.reagir(sorte, idMessage, r.emoji);
+      apres();
+    });
+    barre.append(b);
+  }
+
+  const ajouter = document.createElement('button');
+  ajouter.type = 'button';
+  ajouter.className = 'reaction reaction--ajout';
+  ajouter.dataset.ouvreEmojis = '1';
+  ajouter.textContent = '＋';
+  ajouter.setAttribute('aria-label', T().reagir);
+  ajouter.addEventListener('click', () => {
+    ouvrirSelecteurEmojis(ajouter, async (emoji) => {
+      await window.ludopia.social.reagir(sorte, idMessage, emoji);
+      apres();
+    });
+  });
+  barre.append(ajouter);
+
+  return barre;
+}
+
+// =============================================================================
+// Salons privés
+// =============================================================================
+
+/* Une réponse plus ancienne ne doit jamais écraser une plus récente.
+   Le cas se produit sans effort : on ouvre l'écran — un rafraîchissement part
+   —, on rejoint un salon dans la seconde, un second rafraîchissement part et
+   revient plus vite, puis le premier atterrit avec la liste d'avant. Le salon
+   qu'on vient de rejoindre disparaît alors sans un mot.
+
+   Un simple numéro d'ordre suffit : on ignore ce qui arrive en retard. */
+let ordreSalons = 0;
+
+async function rafraichirSalons() {
+  const mien = ++ordreSalons;
+  const r = await window.ludopia.social.salons();
+  if (r.ok && mien === ordreSalons) etat.salons = r.donnees.salons || [];
+  return r.ok;
+}
+
+async function rafraichirFilSalon() {
+  if (!etat.salon) return;
+  const r = await window.ludopia.social.messagesSalon(etat.salon, 0);
+  if (r.ok) {
+    etat.messagesSalon = r.donnees.messages || [];
+    etat.reactionsSalon = r.donnees.reactions || [];
+  }
+}
+
+async function ouvrirSalon(id) {
+  etat.vue = 'salon';
+  etat.salon = id;
+  etat.conversation = null;
+  etat.messagesSalon = [];
+  etat.reactionsSalon = [];
+  window.ludopia.social.conversationAffichee(null);
+  dessinerSalon();
+
+  await rafraichirFilSalon();
+  const dernier = etat.messagesSalon.reduce((n, m) => Math.max(n, Number(m.id) || 0), 0);
+  if (dernier) await window.ludopia.social.salonLu(id, dernier);
+  await rafraichirSalons();
+
+  const m = await window.ludopia.social.membresSalon(id);
+  if (m.ok) etat.membresSalon = m.donnees.membres || [];
+
+  dessinerSalon();
+  ecouterLeSalon();
+}
+
+/** Même principe que pour les conversations : une requête qui attend. */
+let attenteSalon = false;
+async function ecouterLeSalon() {
+  if (attenteSalon) return;
+  attenteSalon = true;
+  try {
+    while (etat.social.connecte && etat.salon) {
+      const salon = etat.salon;
+      const dernier = etat.messagesSalon
+        .filter((m) => !m.provisoire)
+        .reduce((n, m) => Math.max(n, Number(m.id) || 0), 0);
+
+      const r = await window.ludopia.social.attendreSalon(salon, dernier);
+      if (etat.salon !== salon) break;
+
+      if (r.ok && (r.donnees.messages || []).length) {
+        const connus = new Set(etat.messagesSalon.map((m) => String(m.id)));
+        const neufs = r.donnees.messages.filter((m) => !connus.has(String(m.id)));
+        if (neufs.length) {
+          etat.messagesSalon = [...etat.messagesSalon.filter((m) => !m.provisoire), ...neufs];
+          etat.reactionsSalon = r.donnees.reactions || etat.reactionsSalon;
+          dessinerSalon();
+          const max = neufs.reduce((n, m) => Math.max(n, Number(m.id) || 0), 0);
+          await window.ludopia.social.salonLu(salon, max);
+        }
+      } else if (!r.ok && r.erreur !== 'delai_depasse') {
+        await new Promise((f) => setTimeout(f, 3000));
+      }
+    }
+  } finally {
+    attenteSalon = false;
+  }
+}
+
+function dessinerSalon() {
+  const t = T();
+  const salon = etat.salons.find((s) => s.id === etat.salon);
+  if (!salon) {
+    etat.salon = null;
+    ouvrirAmis();
+    return;
+  }
+
+  const scene = $('#scene');
+  scene.textContent = '';
+  scene.style.setProperty('--accent', 'var(--brand)');
+  scene.style.setProperty('--accent-ink', '#080813');
+
+  const bloc = document.createElement('section');
+  bloc.className = 'conversation';
+
+  // --- en-tête ---
+  const tete = document.createElement('div');
+  tete.className = 'conv-tete';
+
+  const emoji = document.createElement('span');
+  emoji.className = 'salon-emoji';
+  emoji.textContent = salon.emoji || '🎮';
+
+  const qui = document.createElement('div');
+  const nom = document.createElement('p');
+  nom.className = 'conv-nom';
+  nom.textContent = salon.nom;
+  const sous = document.createElement('p');
+  sous.className = 'ami-etat';
+  const enLigne = etat.membresSalon.filter((m) => m.enLigne).length;
+  sous.textContent = `${salon.membres} ${salon.membres > 1 ? t.membres : t.unMembre}`
+    + (enLigne ? ` · ${enLigne} ${t.amisEnLigne}` : '');
+  qui.append(nom, sous);
+
+  tete.append(emoji, qui);
+
+  const outils = document.createElement('div');
+  outils.className = 'conv-outils';
+
+  if (salon.code) {
+    const code = document.createElement('button');
+    code.type = 'button';
+    code.className = 'btn-mini';
+    code.textContent = `${t.codeSalon} ${salon.code.slice(0, 4)} ${salon.code.slice(4)}`;
+    code.addEventListener('click', async () => {
+      await navigator.clipboard.writeText(salon.code);
+      code.textContent = t.copie;
+      setTimeout(() => dessinerSalon(), 1600);
+    });
+    outils.append(code);
+  }
+
+  const partir = document.createElement('button');
+  partir.type = 'button';
+  partir.className = 'btn-mini';
+  partir.textContent = t.quitterSalon;
+  partir.addEventListener('click', async () => {
+    if (!window.confirm(t.confirmerQuitter)) return;
+    await window.ludopia.social.quitterSalon(salon.id);
+    etat.salon = null;
+    await rafraichirSalons();
+    ouvrirAmis();
+  });
+  outils.append(partir);
+
+  tete.append(outils);
+  bloc.append(tete);
+
+  // --- fil ---
+  const fil = document.createElement('div');
+  fil.className = 'conv-fil';
+  if (!etat.messagesSalon.length) {
+    fil.append(bulle(t.salonVide, 'calme'));
+  } else {
+    let dernierAuteur = null;
+    for (const m of etat.messagesSalon) {
+      const el = document.createElement('div');
+      el.className = m.auteur === etat.social.moi?.id ? 'msg msg--moi' : 'msg';
+      if (m.provisoire) el.classList.add('msg--provisoire');
+
+      // Le pseudo n'apparaît qu'au changement d'auteur : le répéter à chaque
+      // ligne hache la lecture d'une conversation à plusieurs.
+      if (m.auteur !== dernierAuteur && m.auteur !== etat.social.moi?.id) {
+        const qui2 = document.createElement('p');
+        qui2.className = 'msg-auteur';
+        qui2.textContent = m.pseudo;
+        el.append(qui2);
+      }
+      dernierAuteur = m.auteur;
+
+      const texte = document.createElement('p');
+      texte.textContent = m.texte;
+      const heure = document.createElement('span');
+      heure.className = 'msg-heure';
+      heure.textContent = new Date(m.envoye_le * 1000).toLocaleTimeString(
+        etat.langue === 'fr' ? 'fr-FR' : 'en-GB', { hour: '2-digit', minute: '2-digit' },
+      );
+      el.append(texte, heure);
+
+      if (!m.provisoire) {
+        el.append(barreReactions('salon', m.id, etat.reactionsSalon, async () => {
+          await rafraichirFilSalon();
+          dessinerSalon();
+        }));
+      }
+      fil.append(el);
+    }
+  }
+  bloc.append(fil);
+
+  // --- saisie ---
+  bloc.append(champSaisie(async (texte) => {
+    const provisoire = {
+      id: `provisoire-${Date.now()}`,
+      auteur: etat.social.moi?.id,
+      pseudo: etat.social.moi?.pseudo,
+      texte,
+      envoye_le: Math.floor(Date.now() / 1000),
+      provisoire: true,
+    };
+    etat.messagesSalon = [...etat.messagesSalon, provisoire];
+    dessinerSalon();
+
+    const r = await window.ludopia.social.ecrireSalon(salon.id, texte);
+    if (!r.ok) {
+      etat.messagesSalon = etat.messagesSalon.filter((x) => x.id !== provisoire.id);
+      dessinerSalon();
+      $('.conv-fil')?.append(bulle(messageErreur(r.erreur, r.detail)));
+      return;
+    }
+    await rafraichirFilSalon();
+    dessinerSalon();
+  }));
+
+  scene.append(bloc);
+  dessinerRail();
+  dessinerChats();
+
+  setTimeout(() => {
+    const f = $('.conv-fil');
+    if (f) f.scrollTop = f.scrollHeight;
+    $('.conv-saisie input')?.focus();
+  }, 30);
+}
+
+/** La barre de saisie, partagée par les conversations et les salons. */
+function champSaisie(envoyer) {
+  const t = T();
+  const form = document.createElement('form');
+  form.className = 'conv-saisie';
+
+  const saisie = document.createElement('input');
+  saisie.type = 'text';
+  saisie.placeholder = t.votreMessage;
+  saisie.maxLength = 1000;
+
+  const emoji = document.createElement('button');
+  emoji.type = 'button';
+  emoji.className = 'btn-mini';
+  emoji.dataset.ouvreEmojis = '1';
+  emoji.textContent = '😀';
+  emoji.setAttribute('aria-label', t.emojis);
+  emoji.addEventListener('click', () => {
+    ouvrirSelecteurEmojis(emoji, (e) => {
+      saisie.value += e;
+      saisie.focus();
+    });
+  });
+
+  const bouton = document.createElement('button');
+  bouton.type = 'submit';
+  bouton.className = 'btn-mini btn-mini--fort';
+  bouton.textContent = t.envoyer;
+
+  form.addEventListener('submit', async (evt) => {
+    evt.preventDefault();
+    const texte = saisie.value.trim();
+    if (!texte) return;
+    saisie.value = '';
+    await envoyer(texte);
+  });
+
+  form.append(saisie, emoji, bouton);
+  return form;
+}
+
+// =============================================================================
+// Profil
+// =============================================================================
+
+async function ouvrirProfil(id) {
+  const r = await window.ludopia.social.profil(id === etat.social.moi?.id ? null : id);
+  if (!r.ok) {
+    /* Pas de `window.alert` : en Electron il fige le rendu jusqu'à ce que
+       quelqu'un clique, ce qui bloque aussi les mises à jour de la
+       conversation en cours. Le message s'affiche dans la page. */
+    const scene = $('#scene');
+    scene?.prepend(bulle(messageErreur(r.erreur, r.detail)));
+    return;
+  }
+  etat.profil = r.donnees;
+  dessinerProfil();
+}
+
+function dessinerProfil() {
+  const t = T();
+  const p = etat.profil;
+  if (!p) return;
+
+  fermerSelecteur();
+  const ancien = $('.voile');
+  if (ancien) ancien.remove();
+
+  const voile = document.createElement('div');
+  voile.className = 'voile';
+  voile.addEventListener('click', (evt) => { if (evt.target === voile) voile.remove(); });
+
+  const carte = document.createElement('div');
+  carte.className = 'profil';
+  carte.setAttribute('role', 'dialog');
+  carte.setAttribute('aria-modal', 'true');
+
+  const fermer = document.createElement('button');
+  fermer.type = 'button';
+  fermer.className = 'profil-fermer';
+  fermer.textContent = '✕';
+  fermer.setAttribute('aria-label', t.fermerProfil);
+  fermer.addEventListener('click', () => voile.remove());
+  carte.append(fermer);
+
+  const rond = document.createElement('span');
+  rond.className = 'profil-rond';
+  rond.style.setProperty('--teinte', teinte(p.id));
+  rond.textContent = initiales(p.pseudo);
+  carte.append(rond);
+
+  const nom = document.createElement('h2');
+  nom.textContent = p.pseudo;
+  carte.append(nom);
+
+  const titre = document.createElement('p');
+  titre.className = 'profil-titre';
+  titre.textContent = `${t.niveau} ${p.niveau} · ${p.titre}`;
+  carte.append(titre);
+
+  if (p.statut) {
+    const st = document.createElement('p');
+    st.className = 'profil-statut';
+    st.textContent = p.statut;
+    carte.append(st);
+  }
+
+  // La barre de progression : on voit ce qui manque pour le palier suivant.
+  const jauge = document.createElement('div');
+  jauge.className = 'profil-jauge';
+  const remplie = document.createElement('i');
+  remplie.style.width = `${Math.round((p.dansLeNiveau / p.paliersuivant) * 100)}%`;
+  jauge.append(remplie);
+  carte.append(jauge);
+
+  const sousJauge = document.createElement('p');
+  sousJauge.className = 'acc-note';
+  sousJauge.textContent = `${p.dansLeNiveau} / ${p.paliersuivant} ${t.joursVersNiveau}`;
+  carte.append(sousJauge);
+
+  const chiffres = document.createElement('div');
+  chiffres.className = 'chiffres';
+  chiffres.append(
+    carteChiffre(String(p.joursDeJeu), t.joursDeJeu),
+    carteChiffre(String(p.amis), t.amisTitre),
+    carteChiffre(new Date(p.depuis * 1000).toLocaleDateString(
+      etat.langue === 'fr' ? 'fr-FR' : 'en-GB'), t.membreDepuis),
+  );
+  carte.append(chiffres);
+
+  if (p.parJeu?.length) {
+    const h3 = document.createElement('h3');
+    h3.className = 'profil-sous';
+    h3.textContent = t.parJeu;
+    carte.append(h3);
+
+    const liste = document.createElement('ul');
+    liste.className = 'profil-jeux';
+    for (const j of p.parJeu) {
+      const jeu = etat.catalogue.jeux.find((x) => x.id === j.jeu);
+      const li = document.createElement('li');
+      li.style.setProperty('--accent', jeu?.accent || 'var(--brand)');
+      const n = document.createElement('span');
+      n.textContent = jeu?.nom || j.jeu;
+      const v = document.createElement('em');
+      v.textContent = `${j.jours} ${j.jours > 1 ? t.jours : t.unJour}`;
+      li.append(n, v);
+      liste.append(li);
+    }
+    carte.append(liste);
+  }
+
+  const mesure = document.createElement('p');
+  mesure.className = 'acc-note';
+  mesure.textContent = t.profilMesure;
+  carte.append(mesure);
+
+  voile.append(carte);
+  document.body.append(voile);
+}
+
 // =============================================================================
 // Amis
 // =============================================================================
@@ -696,6 +1286,13 @@ function carteAmi(ami, actions) {
   sous.append(e.texte);
 
   tete.append(nom, sous);
+
+  if (ami.statut) {
+    const st = document.createElement('p');
+    st.className = 'ami-statut';
+    st.textContent = ami.statut;
+    tete.append(st);
+  }
   el.append(tete);
 
   const barre = document.createElement('div');
@@ -755,6 +1352,36 @@ function dessinerListeAmis(scene) {
 
   carteCode.append(etiquette, valeur, copier, explication);
   enTete.append(carteCode);
+
+  // --- statut ---
+  const formStatut = document.createElement('form');
+  formStatut.className = 'ajout-ami';
+  formStatut.id = 'monStatut';
+  const champStatut = document.createElement('input');
+  champStatut.type = 'text';
+  champStatut.maxLength = 80;
+  champStatut.placeholder = t.statutExemple;
+  champStatut.value = etat.social.moi?.statut || '';
+  champStatut.setAttribute('aria-label', t.monStatut);
+
+  const enregistrer = document.createElement('button');
+  enregistrer.type = 'submit';
+  enregistrer.className = 'btn-mini';
+  enregistrer.textContent = t.enregistrer;
+
+  formStatut.addEventListener('submit', async (evt) => {
+    evt.preventDefault();
+    enregistrer.disabled = true;
+    const r = await window.ludopia.social.statut(champStatut.value.trim() || null);
+    enregistrer.disabled = false;
+    if (r.ok) {
+      etat.social.moi = { ...etat.social.moi, statut: r.donnees.statut };
+      enregistrer.textContent = t.copie;
+      setTimeout(() => { enregistrer.textContent = t.enregistrer; }, 1500);
+    }
+  });
+  formStatut.append(champStatut, enregistrer);
+  enTete.append(formStatut);
 
   // --- ajouter ---
   const form = document.createElement('form');
@@ -857,6 +1484,7 @@ function dessinerListeAmis(scene) {
       }
 
       actions.push(
+        [t.voirProfil, 'discret', () => ouvrirProfil(a.id)],
         [t.bloquerAmi, 'discret', async () => {
           if (!window.confirm(t.confirmerBlocage)) return;
           await window.ludopia.social.bloquer(a.id, true);
@@ -956,9 +1584,12 @@ function dessinerConversation(scene) {
   });
 
   const qui = document.createElement('div');
-  const nom = document.createElement('p');
-  nom.className = 'conv-nom';
+  const nom = document.createElement('button');
+  nom.type = 'button';
+  nom.className = 'conv-nom conv-nom--bouton';
   nom.textContent = ami.pseudo;
+  nom.title = t.voirProfil;
+  nom.addEventListener('click', () => ouvrirProfil(ami.id));
   const e = etatAmi(ami);
   const sous = document.createElement('p');
   sous.className = 'ami-etat';
@@ -988,6 +1619,12 @@ function dessinerConversation(scene) {
         etat.langue === 'fr' ? 'fr-FR' : 'en-GB', { hour: '2-digit', minute: '2-digit' },
       );
       el.append(texte, heure);
+      if (!m.provisoire) {
+        el.append(barreReactions('direct', m.id, etat.reactionsDirectes, async () => {
+          await rafraichirConversation();
+          dessinerAmis();
+        }));
+      }
       fil.append(el);
     }
   }
@@ -1038,7 +1675,20 @@ function dessinerConversation(scene) {
     dessinerAmis();
   });
 
-  form.append(saisie, envoyer);
+  const bEmoji = document.createElement('button');
+  bEmoji.type = 'button';
+  bEmoji.className = 'btn-mini';
+  bEmoji.dataset.ouvreEmojis = '1';
+  bEmoji.textContent = '😀';
+  bEmoji.setAttribute('aria-label', t.emojis);
+  bEmoji.addEventListener('click', () => {
+    ouvrirSelecteurEmojis(bEmoji, (e) => {
+      saisie.value += e;
+      saisie.focus();
+    });
+  });
+
+  form.append(saisie, bEmoji, envoyer);
   bloc.append(form);
   scene.append(bloc);
 
@@ -1069,9 +1719,14 @@ function dessinerAmis() {
   scene.scrollTop = 0;
 }
 
+let ordreAmis = 0;
+
 async function rafraichirAmis() {
+  const mien = ++ordreAmis;
   const r = await window.ludopia.social.amis();
-  if (r.ok) etat.amis = r.donnees;
+  // Même raison que pour les salons : une réponse en retard effacerait un ami
+  // tout juste accepté.
+  if (r.ok && mien === ordreAmis) etat.amis = r.donnees;
   return r.ok;
 }
 
@@ -1079,6 +1734,8 @@ async function rafraichirConversation() {
   if (!etat.conversation) return;
   const r = await window.ludopia.social.messages(etat.conversation, 0);
   if (r.ok) etat.messages = r.donnees.messages || [];
+  const rr = await window.ludopia.social.reactions(etat.conversation);
+  if (rr.ok) etat.reactionsDirectes = rr.donnees.reactions || [];
 }
 
 async function ouvrirConversation(id) {
@@ -1114,9 +1771,12 @@ function dessinerChats() {
   if (!colonne) return;
 
   const liste = etat.social.connecte ? (etat.amis?.amis || []) : [];
-  colonne.hidden = liste.length === 0;
-  document.body.classList.toggle('avec-chats', liste.length > 0);
-  if (!liste.length) return;
+  const salons = etat.social.connecte ? etat.salons : [];
+  const quelqueChose = liste.length > 0 || salons.length > 0;
+
+  colonne.hidden = !quelqueChose;
+  document.body.classList.toggle('avec-chats', quelqueChose);
+  if (!quelqueChose) return;
 
   colonne.textContent = '';
 
@@ -1124,6 +1784,37 @@ function dessinerChats() {
   titre.className = 'chats-titre';
   titre.textContent = T().conversations;
   colonne.append(titre);
+
+  // Les salons d'abord : ce sont les lieux, les amis sont les personnes.
+  for (const sa of salons) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'chat-pastille chat-pastille--salon';
+    b.title = sa.nom;
+    b.setAttribute('aria-label', sa.nom);
+    b.setAttribute('aria-current', String(etat.salon === sa.id));
+
+    const rond = document.createElement('span');
+    rond.className = 'chat-rond chat-rond--salon';
+    rond.textContent = sa.emoji || '🎮';
+    b.append(rond);
+
+    if (sa.nonLus) {
+      const n = document.createElement('b');
+      n.className = 'chat-non-lus';
+      n.textContent = sa.nonLus > 9 ? '9+' : String(sa.nonLus);
+      b.append(n);
+    }
+
+    b.addEventListener('click', () => ouvrirSalon(sa.id));
+    colonne.append(b);
+  }
+
+  if (salons.length && liste.length) {
+    const trait = document.createElement('hr');
+    trait.className = 'chats-trait';
+    colonne.append(trait);
+  }
 
   // Les personnes en ligne d'abord, puis celles qui ont écrit sans réponse.
   const ordonnes = [...liste].sort(
@@ -1159,15 +1850,183 @@ function dessinerChats() {
   }
 }
 
+function dessinerSalons() {
+  const t = T();
+  const scene = $('#scene');
+  scene.textContent = '';
+  scene.style.setProperty('--accent', 'var(--brand)');
+  scene.style.setProperty('--accent-ink', '#080813');
+
+  const tete = document.createElement('section');
+  tete.className = 'acc-tete';
+  const h1 = document.createElement('h1');
+  h1.textContent = t.salons;
+  tete.append(h1);
+
+  const intro = document.createElement('p');
+  intro.className = 'acc-vide';
+  intro.textContent = t.salonsExplication;
+  tete.append(intro);
+
+  // --- créer ---
+  const formCreer = document.createElement('form');
+  formCreer.className = 'ajout-ami';
+  formCreer.id = 'creerSalon';
+  const nom = document.createElement('input');
+  nom.type = 'text';
+  nom.placeholder = t.nomDuSalon;
+  nom.maxLength = 40;
+
+  let emojiChoisi = '🎮';
+  const choixEmoji = document.createElement('button');
+  choixEmoji.type = 'button';
+  choixEmoji.className = 'btn-mini';
+  choixEmoji.dataset.ouvreEmojis = '1';
+  choixEmoji.textContent = emojiChoisi;
+  choixEmoji.addEventListener('click', () => {
+    ouvrirSelecteurEmojis(choixEmoji, (e) => {
+      emojiChoisi = e;
+      choixEmoji.textContent = e;
+    });
+  });
+
+  const creer = document.createElement('button');
+  creer.type = 'submit';
+  creer.className = 'btn-mini btn-mini--fort';
+  creer.textContent = t.creer;
+
+  const retourCreer = document.createElement('div');
+  retourCreer.className = 'ajout-retour';
+
+  formCreer.addEventListener('submit', async (evt) => {
+    evt.preventDefault();
+    retourCreer.textContent = '';
+    creer.disabled = true;
+    const r = await window.ludopia.social.creerSalon(nom.value, emojiChoisi);
+    creer.disabled = false;
+    if (!r.ok) {
+      retourCreer.append(bulle(messageErreur(r.erreur, r.detail)));
+      return;
+    }
+    nom.value = '';
+    await rafraichirSalons();
+    ouvrirSalon(r.donnees.id);
+  });
+  formCreer.append(nom, choixEmoji, creer);
+
+  // --- rejoindre ---
+  const formJoindre = document.createElement('form');
+  formJoindre.className = 'ajout-ami';
+  formJoindre.id = 'rejoindreSalon';
+  const code = document.createElement('input');
+  code.type = 'text';
+  code.placeholder = t.codeDuSalon;
+  code.maxLength = 9;
+  const joindre = document.createElement('button');
+  joindre.type = 'submit';
+  joindre.className = 'btn-mini';
+  joindre.textContent = t.rejoindre;
+  const retourJoindre = document.createElement('div');
+  retourJoindre.className = 'ajout-retour';
+
+  formJoindre.addEventListener('submit', async (evt) => {
+    evt.preventDefault();
+    retourJoindre.textContent = '';
+    joindre.disabled = true;
+    const r = await window.ludopia.social.rejoindreSalon(code.value);
+    joindre.disabled = false;
+    if (!r.ok) {
+      retourJoindre.append(bulle(messageErreur(r.erreur, r.detail)));
+      return;
+    }
+    code.value = '';
+    await rafraichirSalons();
+    ouvrirSalon(r.donnees.id);
+  });
+  formJoindre.append(code, joindre);
+
+  tete.append(formCreer, retourCreer, formJoindre, retourJoindre);
+  scene.append(tete);
+
+  // --- la liste ---
+  const bloc = document.createElement('section');
+  bloc.className = 'acc-bloc';
+  if (!etat.salons.length) {
+    bloc.append(bulle(t.aucunSalon, 'calme'));
+  } else {
+    const grille = document.createElement('div');
+    grille.className = 'amis-grille';
+    for (const sa of etat.salons) {
+      const el = document.createElement('article');
+      el.className = 'ami';
+      const tt = document.createElement('div');
+      tt.className = 'ami-tete';
+      const n = document.createElement('p');
+      n.className = 'ami-nom';
+      n.textContent = `${sa.emoji || '🎮'} ${sa.nom}`;
+      if (sa.nonLus) {
+        const p = document.createElement('b');
+        p.className = 'ami-pastille';
+        p.textContent = String(sa.nonLus);
+        n.append(p);
+      }
+      const sous = document.createElement('p');
+      sous.className = 'ami-etat';
+      sous.textContent = `${sa.membres} ${sa.membres > 1 ? t.membres : t.unMembre}`;
+      tt.append(n, sous);
+      el.append(tt);
+
+      const actions = document.createElement('div');
+      actions.className = 'ami-actions';
+      const ouvrir = document.createElement('button');
+      ouvrir.type = 'button';
+      ouvrir.className = 'btn-mini btn-mini--fort';
+      ouvrir.textContent = t.ecrire;
+      ouvrir.addEventListener('click', () => ouvrirSalon(sa.id));
+      actions.append(ouvrir);
+      el.append(actions);
+      grille.append(el);
+    }
+    bloc.append(grille);
+  }
+  scene.append(bloc);
+
+  dessinerRail();
+  dessinerChats();
+  scene.scrollTop = 0;
+}
+
+function ouvrirLesSalons() {
+  etat.vue = 'salons';
+  etat.salon = null;
+  etat.conversation = null;
+  window.ludopia.social.conversationAffichee(null);
+  dessinerSalons();
+
+  /* Le rafraîchissement de fond ne redessine que s'il apporte quelque chose.
+     Redessiner à tout coup effaçait le code que l'utilisateur était en train
+     de saisir, et le message d'erreur qu'il venait de recevoir — deux façons
+     de rendre l'écran inutilisable pour une mise à jour qui n'apportait rien. */
+  const avant = JSON.stringify(etat.salons.map((sa) => [sa.id, sa.nonLus, sa.membres]));
+  rafraichirSalons().then(() => {
+    if (etat.vue !== 'salons') return;
+    const apres = JSON.stringify(etat.salons.map((sa) => [sa.id, sa.nonLus, sa.membres]));
+    if (avant !== apres) dessinerSalons();
+  });
+}
+
 function ouvrirAmis() {
   etat.vue = 'amis';
   etat.conversation = null;
   window.ludopia.social.conversationAffichee(null);
   dessinerAmis();
   if (etat.social.connecte) {
+    const avant = JSON.stringify(etat.amis?.amis?.map((a) => [a.id, a.enLigne, a.nonLus]));
     rafraichirAmis().then(() => {
       dessinerChats();
-      if (etat.vue === 'amis') dessinerAmis();
+      const apres = JSON.stringify(etat.amis?.amis?.map((a) => [a.id, a.enLigne, a.nonLus]));
+      // Même raison que pour les salons : ne pas effacer une saisie en cours.
+      if (etat.vue === 'amis' && avant !== apres) dessinerAmis();
     });
   }
 }
@@ -1232,13 +2091,21 @@ function suivreLeSocial() {
   horlogeSociale = setInterval(async () => {
     if (!etat.social.connecte) return;
 
-    const avant = JSON.stringify(etat.amis?.amis?.map((a) => [a.enLigne, a.jeu, a.nonLus]));
+    const photo = () => JSON.stringify([
+      etat.amis?.amis?.map((a) => [a.enLigne, a.jeu, a.nonLus, a.statut]),
+      etat.salons?.map((sa) => [sa.nonLus, sa.membres]),
+    ]);
+    const avant = photo();
     await rafraichirAmis();
-    const apres = JSON.stringify(etat.amis?.amis?.map((a) => [a.enLigne, a.jeu, a.nonLus]));
+    // Inutile de relever les salons quand on en lit déjà un : son propre fil
+    // est en attente longue, et le compteur de non-lus s'y remet à zéro.
+    if (!etat.salon) await rafraichirSalons();
+    const apres = photo();
     if (avant !== apres) {
       dessinerRail();
       dessinerChats();
       if (etat.vue === 'amis' && !etat.conversation) dessinerAmis();
+      else if (etat.vue === 'salons') dessinerSalons();
       else if (etat.vue === 'accueil') dessinerAccueil();
     }
   }, 6000);
@@ -1535,6 +2402,8 @@ function redessiner() {
   dessinerChats();
   if (etat.vue === 'accueil') dessinerAccueil();
   else if (etat.vue === 'amis') dessinerAmis();
+  else if (etat.vue === 'salons') dessinerSalons();
+  else if (etat.vue === 'salon') dessinerSalon();
   else dessinerScene();
 }
 
@@ -1607,6 +2476,8 @@ function dessinerMaj(etat) {
 function appliquerLangue() {
   document.documentElement.lang = etat.langue;
   $('[data-langue]').textContent = etat.langue === 'fr' ? 'EN' : 'FR';
+  const rech = $('#recherche');
+  if (rech) rech.placeholder = T().chercherJeu;
   for (const el of document.querySelectorAll('[data-t]')) {
     const v = T()[el.dataset.t];
     if (typeof v === 'string') el.textContent = v;
@@ -1636,6 +2507,21 @@ async function demarrer() {
 
   $('#accueil')?.addEventListener('click', ouvrirAccueil);
   $('#amis')?.addEventListener('click', ouvrirAmis);
+  $('#salonsBouton')?.addEventListener('click', ouvrirLesSalons);
+
+  const champRecherche = $('#recherche');
+  if (champRecherche) {
+    champRecherche.placeholder = T().chercherJeu;
+    champRecherche.addEventListener('input', () => {
+      etat.recherche = champRecherche.value;
+      dessinerRail();
+    });
+  }
+
+  // La liste d'emojis vient du service : la garder ici la ferait diverger.
+  window.ludopia.social.emojis().then((r) => {
+    if (r?.ok && r.donnees?.emojis?.length) EMOJIS = r.donnees.emojis;
+  });
 
   // La session sociale est reprise par le processus principal : on lit son
   // etat, puis on suit ses changements.
@@ -1643,6 +2529,7 @@ async function demarrer() {
     etat.social = e;
     if (e.connecte) {
       await rafraichirAmis();
+      await rafraichirSalons();
       dessinerRail();
       dessinerChats();
       if (etat.vue === 'accueil') dessinerAccueil();
@@ -1666,8 +2553,15 @@ async function demarrer() {
 
   window.ludopia.social.surChangement(async (e) => {
     etat.social = e;
-    if (e.connecte) await rafraichirAmis();
-    else { etat.amis = null; etat.conversation = null; }
+    if (e.connecte) {
+      await rafraichirAmis();
+      await rafraichirSalons();
+    } else {
+      etat.amis = null;
+      etat.conversation = null;
+      etat.salons = [];
+      etat.salon = null;
+    }
     dessinerRail();
     dessinerChats();
     if (etat.vue === 'amis') dessinerAmis();

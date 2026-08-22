@@ -296,6 +296,32 @@ module.exports = {
   invitations: () => appel('GET', '/invitations'),
   invitationVue: (id) => appel('POST', '/invitations/vue', { corps: { id } }),
 
+  // --- salons privés ---
+  salons: () => appel('GET', '/salons'),
+  creerSalon: (nom, emoji) => appel('POST', '/salons', { corps: { nom, emoji } }),
+  rejoindreSalon: (code) => appel('POST', '/salons/rejoindre', { corps: { code } }),
+  quitterSalon: (salon) => appel('POST', '/salons/quitter', { corps: { salon } }),
+  renommerSalon: (salon, nom, emoji) =>
+    appel('POST', '/salons/renommer', { corps: { salon, nom, emoji } }),
+  membresSalon: (salon) => appel('GET', `/salons/membres?salon=${encodeURIComponent(salon)}`),
+  messagesSalon: (salon, depuis = 0) => appel(
+    'GET', `/salons/messages?salon=${encodeURIComponent(salon)}&depuis=${depuis}`,
+  ),
+  attendreSalon: (salon, depuis) => appel(
+    'GET', `/salons/messages?salon=${encodeURIComponent(salon)}&depuis=${depuis}&attendre=1`,
+    { delai: 32000 },
+  ),
+  ecrireSalon: (salon, texte) => appel('POST', '/salons/messages', { corps: { salon, texte } }),
+  salonLu: (salon, jusqu) => appel('POST', '/salons/lu', { corps: { salon, jusqu } }),
+
+  // --- réactions, statut, profil ---
+  reagir: (sorte, message, emoji) =>
+    appel('POST', '/reactions', { corps: { sorte, message, emoji } }),
+  reactions: (avec) => appel('GET', `/reactions?avec=${encodeURIComponent(avec)}`),
+  definirStatut: (statut) => appel('POST', '/statut', { corps: { statut } }),
+  profil: (de) => appel('GET', de ? `/profil?de=${encodeURIComponent(de)}` : '/profil'),
+  emojis: () => appel('GET', '/emojis', { avecJeton: false }),
+
   messages: (avec, depuis = 0) => appel(
     'GET', `/messages?avec=${encodeURIComponent(avec)}&depuis=${depuis}`,
   ),

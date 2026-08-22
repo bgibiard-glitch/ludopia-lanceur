@@ -507,6 +507,27 @@ function brancherIpc() {
   ipcMain.handle('social:signaler', (_e, id, motif) => social.signaler(id, motif));
 
   ipcMain.handle('social:inviter', (_e, vers, jeu) => social.inviter(vers, jeu));
+
+  ipcMain.handle('social:salons', () => social.salons());
+  ipcMain.handle('social:creerSalon', (_e, nom, emoji) => social.creerSalon(nom, emoji));
+  ipcMain.handle('social:rejoindreSalon', (_e, code) => social.rejoindreSalon(code));
+  ipcMain.handle('social:quitterSalon', (_e, salon) => social.quitterSalon(salon));
+  ipcMain.handle('social:renommerSalon', (_e, salon, nom, emoji) =>
+    social.renommerSalon(salon, nom, emoji));
+  ipcMain.handle('social:membresSalon', (_e, salon) => social.membresSalon(salon));
+  ipcMain.handle('social:messagesSalon', (_e, salon, depuis) =>
+    social.messagesSalon(salon, depuis));
+  ipcMain.handle('social:attendreSalon', (_e, salon, depuis) =>
+    social.attendreSalon(salon, depuis));
+  ipcMain.handle('social:ecrireSalon', (_e, salon, texte) => social.ecrireSalon(salon, texte));
+  ipcMain.handle('social:salonLu', (_e, salon, jusqu) => social.salonLu(salon, jusqu));
+
+  ipcMain.handle('social:reagir', (_e, sorte, message, emoji) =>
+    social.reagir(sorte, message, emoji));
+  ipcMain.handle('social:reactions', (_e, avec) => social.reactions(avec));
+  ipcMain.handle('social:statut', (_e, statut) => social.definirStatut(statut));
+  ipcMain.handle('social:profil', (_e, de) => social.profil(de));
+  ipcMain.handle('social:emojis', () => social.emojis());
   // Quel jeu proposer : celui qui est ouvert. Inviter sans jouer n'aurait
   // pas de sens — il n'y aurait rien à rejoindre.
   ipcMain.handle('social:jeuOuvert', () => [...fenetresJeu.keys()][0] || null);

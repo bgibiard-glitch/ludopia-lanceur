@@ -1507,3 +1507,319 @@ body.avec-chats .cadre {
   color: var(--muted);
   white-space: nowrap;
 }
+
+/* =============================================================================
+   SALONS, EMOJIS, PROFIL, RECHERCHE
+   ========================================================================== */
+
+/* --- recherche dans la bibliothèque --- */
+
+.rail-recherche {
+  width: 100%;
+  margin: 0 0 8px;
+  padding: 0.5rem 0.75rem;
+  font: inherit;
+  font-size: 0.86rem;
+  color: var(--ink);
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  transition: border-color 0.2s;
+}
+.rail-recherche:focus {
+  outline: none;
+  border-color: var(--brand);
+}
+/* La croix native du champ `search` est invisible sur fond sombre. */
+.rail-recherche::-webkit-search-cancel-button {
+  filter: invert(1);
+  opacity: 0.45;
+  cursor: pointer;
+}
+
+.rail-vide {
+  padding: 0.7rem 0.8rem;
+  font-size: 0.84rem;
+  color: var(--muted);
+}
+
+/* --- salons dans la colonne --- */
+
+.chat-rond--salon {
+  font-size: 1.15rem;
+  background: var(--bg-3);
+}
+/* Un salon n'a pas de présence : le point d'état n'aurait rien à dire. */
+.chat-pastille--salon::after {
+  display: none;
+}
+
+.chats-trait {
+  width: 28px;
+  height: 1px;
+  margin: 4px 0;
+  border: 0;
+  background: var(--line);
+}
+
+.salon-emoji {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  flex: none;
+  font-size: 1.3rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+
+.conv-outils {
+  display: flex;
+  gap: 0.5rem;
+  /* Poussé à droite : les commandes du salon ne se mêlent pas à son identité. */
+  margin-left: auto;
+}
+
+/* --- emojis --- */
+
+.emojis {
+  position: fixed;
+  z-index: 40;
+  display: grid;
+  grid-template-columns: repeat(10, 1fr);
+  gap: 2px;
+  max-width: 320px;
+  padding: 8px;
+  background: var(--bg-2);
+  border: 1px solid var(--line-strong);
+  border-radius: 13px;
+  box-shadow: 0 18px 44px -18px #000;
+}
+
+.emoji {
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  font-size: 1.05rem;
+  border-radius: 7px;
+  transition: background 0.12s, transform 0.12s;
+}
+.emoji:hover {
+  background: var(--surface-2);
+  transform: scale(1.18);
+}
+
+@media (max-width: 620px) {
+  .emojis {
+    grid-template-columns: repeat(6, 1fr);
+    max-width: 220px;
+  }
+}
+
+/* --- réactions --- */
+
+.reactions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 5px;
+}
+
+.reaction {
+  padding: 1px 7px;
+  font-size: 0.78rem;
+  line-height: 1.5;
+  color: var(--ink-dim);
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid transparent;
+  border-radius: 999px;
+  transition: background 0.15s, border-color 0.15s;
+}
+.reaction:hover {
+  background: rgba(255, 255, 255, 0.14);
+}
+/* Ce que j'ai posé moi-même se distingue : sinon on ne sait plus si un clic
+   ajoutera ou retirera. */
+.reaction--mienne {
+  border-color: var(--brand);
+  color: var(--ink);
+}
+/* Le bouton d'ajout ne s'impose qu'au survol du message. */
+.reaction--ajout {
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.msg:hover .reaction--ajout,
+.reaction--ajout:focus-visible {
+  opacity: 1;
+}
+.msg--moi .reaction {
+  background: rgba(0, 0, 0, 0.18);
+  color: inherit;
+}
+
+.msg-auteur {
+  margin-bottom: 2px;
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: var(--brand-2, #22d3ee);
+}
+
+/* --- statut --- */
+
+.ami-statut {
+  margin-top: 0.3rem;
+  font-size: 0.83rem;
+  font-style: italic;
+  color: var(--ink-dim);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* --- profil --- */
+
+.conv-nom--bouton {
+  text-align: left;
+  transition: color 0.18s;
+}
+.conv-nom--bouton:hover {
+  color: var(--brand-2, #22d3ee);
+  text-decoration: underline;
+}
+
+.voile {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  padding: 2rem 1rem;
+  background: rgba(4, 4, 12, 0.72);
+  backdrop-filter: blur(6px);
+  overflow-y: auto;
+}
+
+.profil {
+  position: relative;
+  width: min(100%, 460px);
+  display: grid;
+  justify-items: center;
+  gap: 0.5rem;
+  padding: 2rem 1.8rem 1.6rem;
+  text-align: center;
+  background: var(--bg-2);
+  border: 1px solid var(--line-strong);
+  border-radius: 22px;
+  box-shadow: 0 30px 80px -30px #000;
+}
+
+.profil-fermer {
+  position: absolute;
+  top: 12px;
+  right: 14px;
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  font-size: 0.9rem;
+  color: var(--muted);
+  border-radius: 8px;
+}
+.profil-fermer:hover {
+  color: var(--ink);
+  background: var(--surface);
+}
+
+.profil-rond {
+  display: grid;
+  place-items: center;
+  width: 76px;
+  height: 76px;
+  font-family: var(--font-display);
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: #fff;
+  background: hsl(var(--teinte, 260) 42% 34%);
+  border-radius: 24px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+.profil h2 {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 1.5rem;
+  letter-spacing: -0.02em;
+}
+
+.profil-titre {
+  font-size: 0.86rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--brand-2, #22d3ee);
+}
+
+.profil-statut {
+  font-style: italic;
+  color: var(--ink-dim);
+  text-wrap: pretty;
+}
+
+.profil-jauge {
+  width: 100%;
+  height: 7px;
+  margin-top: 0.8rem;
+  background: var(--surface-2);
+  border-radius: 99px;
+  overflow: hidden;
+}
+.profil-jauge i {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, var(--brand), var(--brand-2, #22d3ee));
+  border-radius: inherit;
+}
+
+.profil .chiffres {
+  width: 100%;
+  margin-top: 1rem;
+  grid-template-columns: repeat(3, 1fr);
+}
+.profil .chiffre b {
+  font-size: 1.15rem;
+}
+
+.profil-sous {
+  margin-top: 1rem;
+  font-family: var(--font-display);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.profil-jeux {
+  width: 100%;
+  list-style: none;
+  display: grid;
+  gap: 4px;
+}
+.profil-jeux li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.5rem 0.8rem;
+  font-size: 0.9rem;
+  background: var(--surface);
+  border-left: 3px solid var(--accent);
+  border-radius: 0 9px 9px 0;
+}
+.profil-jeux em {
+  font-style: normal;
+  color: var(--muted);
+}
