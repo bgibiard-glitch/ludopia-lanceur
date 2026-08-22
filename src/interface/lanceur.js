@@ -132,6 +132,15 @@ const TEXTES = {
     boutique: 'Boutique',
     editerProfil: 'Personnaliser',
     offrirLudos: 'Offrir des Ludos',
+    aujourdhui: 'Aujourd’hui',
+    bonusAPrendre: 'Votre bonus du jour vous attend',
+    bonusPrendre: 'Le prendre',
+    bonusRecu: (n) => `+${n} Ⱡ — à demain !`,
+    serieAcquise: (qui, n) => `🔥 Série de ${n} j avec ${qui} — tenue pour aujourd’hui`,
+    seriePerilAccueil: (qui, n) => `🔥 ${n} j avec ${qui} — il manque une partie aujourd’hui !`,
+    amisEnJeu: 'En ce moment',
+    joueDepuis: (jeu, d) => `joue à ${jeu}${d ? ` · ${d}` : ''}`,
+    rejoindreAmi: 'Le rejoindre',
     passeportTitre: 'Passeport public',
     passeportAide: 'Une page web à partager : votre niveau, vos jeux, ce que vous portez. '
       + 'Jamais votre présence en direct ni vos amis. Fermé par défaut.',
@@ -349,6 +358,15 @@ const TEXTES = {
     boutique: 'Shop',
     editerProfil: 'Customise',
     offrirLudos: 'Gift Ludos',
+    aujourdhui: 'Today',
+    bonusAPrendre: 'Your daily bonus is waiting',
+    bonusPrendre: 'Claim it',
+    bonusRecu: (n) => `+${n} Ⱡ — see you tomorrow!`,
+    serieAcquise: (qui, n) => `🔥 ${n}-day streak with ${qui} — safe for today`,
+    seriePerilAccueil: (qui, n) => `🔥 ${n} d with ${qui} — one game missing today!`,
+    amisEnJeu: 'Right now',
+    joueDepuis: (jeu, d) => `playing ${jeu}${d ? ` · ${d}` : ''}`,
+    rejoindreAmi: 'Join them',
     passeportTitre: 'Public passport',
     passeportAide: 'A web page to share: your level, your games, what you wear. '
       + 'Never your live presence or your friends. Closed by default.',
@@ -1341,6 +1359,96 @@ function dessinerProfil() {
   document.body.append(voile);
 }
 
+
+// =============================================================================
+// L'accueil : la section « Aujourd'hui »
+// =============================================================================
+
+/**
+ * Remplit la bande du jour : bonus à prendre, séries, amis en pleine partie.
+ *
+ * Tout est chargé après le premier dessin — l'accueil s'affiche d'abord, la
+ * bande arrive dans la demi-seconde. L'inverse ferait attendre tout l'écran
+ * pour trois lignes.
+ */
+async function remplirAujourdhui(lignes, zone) {
+  const t = T();
+
+  const [bourse, amis] = await Promise.all([
+    window.ludopia.bourse.lire(),
+    window.ludopia.social.amis(),
+  ]);
+  if (etat.vue !== 'accueil') return;
+
+  // --- le bonus ---
+  if (bourse.ok && bourse.donnees.bonusDisponible) {
+    const ligne = document.createElement('div');
+    ligne.className = 'jour-ligne jour-ligne--bonus';
+    const texte = document.createElement('p');
+    texte.textContent = `🎁 ${t.bonusAPrendre}`;
+    ligne.append(texte);
+
+    const prendre = document.createElement('button');
+    prendre.type = 'button';
+    prendre.className = 'jouer jouer--mini';
+    prendre.textContent = t.bonusPrendre;
+    prendre.addEventListener('click', async () => {
+      prendre.disabled = true;
+      const r = await window.ludopia.bourse.bonus();
+      if (r.ok) {
+        texte.textContent = `✨ ${t.bonusRecu(r.donnees.recu)}`;
+        prendre.remove();
+        const pastille = $('#railLudos');
+        if (pastille) { pastille.textContent = `${r.donnees.solde} Ⱡ`; pastille.hidden = false; }
+      } else prendre.disabled = false;
+    });
+    ligne.append(prendre);
+    lignes.append(ligne);
+  }
+
+  if (amis.ok) {
+    const liste = amis.donnees.amis || [];
+
+    // --- les séries du jour, en péril d'abord : c'est elles qu'on peut
+    // encore sauver. Trois lignes au plus — une litanie n'alerte plus.
+    const avecSerie = liste.filter((a) => a.serie && a.serie.jours > 0);
+    avecSerie.sort((x, y) => Number(y.serie.enPeril) - Number(x.serie.enPeril)
+      || y.serie.jours - x.serie.jours);
+    for (const a of avecSerie.slice(0, 3)) {
+      const ligne = document.createElement('div');
+      ligne.className = a.serie.enPeril ? 'jour-ligne jour-ligne--peril' : 'jour-ligne';
+      const texte = document.createElement('p');
+      texte.textContent = a.serie.enPeril
+        ? t.seriePerilAccueil(a.pseudo, a.serie.jours)
+        : t.serieAcquise(a.pseudo, a.serie.jours);
+      ligne.append(texte);
+      lignes.append(ligne);
+    }
+
+    // --- les amis en pleine partie : l'invitation vivante ---
+    for (const a of liste.filter((x) => x.jeu).slice(0, 3)) {
+      const jeu = etat.catalogue.jeux.find((j) => j.id === a.jeu);
+      const ligne = document.createElement('div');
+      ligne.className = 'jour-ligne';
+      const texte = document.createElement('p');
+      texte.textContent = `🎮 ${a.pseudo} — ${t.joueDepuis(jeu ? jeu.nom : a.jeu,
+        dureeCourte(a.jeuDepuis))}`;
+      ligne.append(texte);
+
+      if (jeu?.url) {
+        const rejoindre = document.createElement('button');
+        rejoindre.type = 'button';
+        rejoindre.className = 'btn-mini';
+        rejoindre.textContent = t.rejoindreAmi;
+        rejoindre.addEventListener('click', () => window.ludopia.lancer(jeu.id));
+        ligne.append(rejoindre);
+      }
+      lignes.append(ligne);
+    }
+  }
+
+  if (lignes.childElementCount) zone.hidden = false;
+}
 
 // =============================================================================
 // Offrir des Ludos, signaler — de petites boîtes en place
@@ -3139,6 +3247,26 @@ function dessinerAccueil() {
   note.textContent = t.riensurvous;
   tete.append(note);
   scene.append(tete);
+
+  /* --- aujourd'hui : ce qui mérite un geste maintenant ---------------------
+     La section n'existe que si elle a quelque chose à dire : un bonus à
+     prendre, une série qui se joue aujourd'hui, un ami en pleine partie. Un
+     bloc « Aujourd'hui » vide dirait « il ne se passe rien », ce qui est le
+     contraire de son travail. */
+  if (etat.social.connecte) {
+    const zone = document.createElement('section');
+    zone.className = 'acc-bloc';
+    zone.id = 'acc-jour';
+    zone.hidden = true;
+    const h2j = document.createElement('h2');
+    h2j.textContent = t.aujourdhui;
+    zone.append(h2j);
+    const lignes = document.createElement('div');
+    lignes.className = 'jour-lignes';
+    zone.append(lignes);
+    scene.append(zone);
+    remplirAujourdhui(lignes, zone);
+  }
 
   // --- reprendre la dernière partie ---
   const dernier = etat.catalogue.jeux.find((j) => j.id === etat.choisi && j.url)

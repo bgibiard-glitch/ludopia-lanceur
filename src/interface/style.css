@@ -3065,3 +3065,31 @@ body.dans-serveur .scene {
 .profil[data-banniere="orage"]::before  { background: linear-gradient(120deg, #232345, #94a3b8); }
 .profil[data-banniere="foret"]::before  { background: linear-gradient(120deg, #14421f, #a3e635); }
 .profil[data-banniere="sable"]::before  { background: linear-gradient(120deg, #8a6a3b, #f5deb3); }
+
+
+/* ============================================================
+   LA BANDE « AUJOURD'HUI » DE L'ACCUEIL
+   ============================================================ */
+.jour-lignes { display: grid; gap: 0.5rem; }
+
+.jour-ligne {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8rem;
+  padding: 0.65rem 0.9rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+.jour-ligne p { font-size: 0.92rem; }
+
+.jour-ligne--bonus {
+  border-color: color-mix(in srgb, var(--or) 40%, transparent);
+  background: color-mix(in srgb, var(--or) 8%, transparent);
+}
+
+.jour-ligne--peril {
+  border-color: color-mix(in srgb, var(--rouge) 40%, transparent);
+  background: color-mix(in srgb, var(--rouge) 7%, transparent);
+}
