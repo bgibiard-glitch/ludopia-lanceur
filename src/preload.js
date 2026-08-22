@@ -109,6 +109,31 @@ contextBridge.exposeInMainWorld('ludopia', {
     },
   },
 
+  /* Le mode audio. La négociation passe par le processus principal, mais la
+     connexion elle-même vit dans l'interface : c'est là que se trouvent
+     RTCPeerConnection et le micro. */
+  voix: {
+    glace: () => ipcRenderer.invoke('voix:glace'),
+    appeler: (vers) => ipcRenderer.invoke('voix:appeler', vers),
+    repondre: (appel, accepte) => ipcRenderer.invoke('voix:repondre', appel, accepte),
+    raccrocher: (appel, raison) => ipcRenderer.invoke('voix:raccrocher', appel, raison),
+    signal: (appel, sorte, charge) => ipcRenderer.invoke('voix:signal', appel, sorte, charge),
+    etat: (appel) => ipcRenderer.invoke('voix:etat', appel),
+
+    surSignaux: (rappel) => {
+      const ecouteur = (_evt, signaux) => rappel(signaux);
+      ipcRenderer.on('voix:signaux', ecouteur);
+      return () => ipcRenderer.removeListener('voix:signaux', ecouteur);
+    },
+
+    /** L'utilisateur a cliqué « Répondre » dans l'avis système. */
+    surDecrocher: (rappel) => {
+      const ecouteur = (_evt, appel) => rappel(appel);
+      ipcRenderer.on('voix:decrocher', ecouteur);
+      return () => ipcRenderer.removeListener('voix:decrocher', ecouteur);
+    },
+  },
+
   majEtat: () => ipcRenderer.invoke('maj:etat'),
   majChercher: () => ipcRenderer.invoke('maj:chercher'),
   majInstaller: () => ipcRenderer.invoke('maj:installer'),

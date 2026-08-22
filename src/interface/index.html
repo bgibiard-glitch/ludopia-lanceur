@@ -75,6 +75,17 @@
       </main>
     </div>
 
+    <!-- Le mode audio. Trois zones fixes, hors de la scène : un appel doit
+         rester visible quelle que soit la vue affichée, y compris pendant
+         qu'on parcourt la bibliothèque. -->
+    <div class="voix-entrant" id="voix-entrant" role="alert" hidden></div>
+    <div class="voix-barre" id="voix-barre" hidden></div>
+    <p class="voix-avis" id="voix-avis" role="status" hidden></p>
+    <!-- La voix du correspondant. `autoplay` sans quoi rien ne sort ; pas de
+         contrôles, ce n'est pas un lecteur. -->
+    <audio id="voix-sortie" autoplay></audio>
+
+    <script src="voix.js"></script>
     <script src="lanceur.js"></script>
   </body>
 </html>

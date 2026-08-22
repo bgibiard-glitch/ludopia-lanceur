@@ -46,6 +46,10 @@ if (!app.requestSingleInstanceLock()) {
 }
 
 let fenetreBibliotheque = null;
+
+/* De quoi refermer l'avis d'un appel qui n'a plus lieu d'être : une sonnerie
+   par appel, retirée dès qu'il se termine. */
+const sonneriesEnCours = new Map();
 let plateau = null;                       // icône de la zone de notification
 const fenetresJeu = new Map();            // id du jeu -> BrowserWindow
 const chronos = new Map();                // id du jeu -> horodatage de lancement
@@ -187,6 +191,32 @@ function creerBibliotheque() {
       spellcheck: false,
     },
   });
+
+  /* Le micro, et rien d'autre.
+     Sans gestionnaire explicite, Electron accorde à peu près tout ce qu'une
+     page demande. On énumère donc ce qui a une raison d'exister ici : le mode
+     audio a besoin du micro, l'interface a besoin d'écrire dans le
+     presse-papiers. La caméra, la position, les périphériques USB n'ont aucun
+     usage dans un lanceur de jeux, et le jour où une page en demanderait, ce
+     serait un signe et pas une commodité. */
+  fenetreBibliotheque.webContents.session.setPermissionRequestHandler(
+    (_wc, permission, callback, details) => {
+      if (permission === 'media') {
+        // `mediaTypes` est absent sur certaines versions : à défaut, on
+        // n'accorde rien plutôt que d'accorder la caméra par inadvertance.
+        const types = details?.mediaTypes || [];
+        callback(types.length > 0 && types.every((t) => t === 'audio'));
+        return;
+      }
+      callback(['clipboard-sanitized-write', 'fullscreen'].includes(permission));
+    },
+  );
+  fenetreBibliotheque.webContents.session.setPermissionCheckHandler(
+    (_wc, permission, _origine, details) => {
+      if (permission === 'media') return details?.mediaType === 'audio';
+      return ['clipboard-sanitized-write', 'fullscreen'].includes(permission);
+    },
+  );
 
   fenetreBibliotheque.loadFile(path.join(__dirname, 'interface', 'index.html'));
   fenetreBibliotheque.once('ready-to-show', () => {
@@ -571,6 +601,14 @@ function brancherIpc() {
   ipcMain.handle('social:attendreMessages', (_e, avec, depuis) =>
     social.attendreMessages(avec, depuis));
   ipcMain.handle('social:envoyer', (_e, vers, texte) => social.envoyer(vers, texte));
+
+  // --- le mode audio ---
+  ipcMain.handle('voix:glace', () => social.glace());
+  ipcMain.handle('voix:appeler', (_e, vers) => social.appelerVoix(vers));
+  ipcMain.handle('voix:repondre', (_e, id, accepte) => social.repondreVoix(id, accepte));
+  ipcMain.handle('voix:raccrocher', (_e, id, raison) => social.raccrocherVoix(id, raison));
+  ipcMain.handle('voix:signal', (_e, id, sorte, charge) => social.signalVoix(id, sorte, charge));
+  ipcMain.handle('voix:etat', (_e, id) => social.etatVoix(id));
   ipcMain.handle('social:marquerLus', (_e, avec) => {
     avis.vuePar(avec);
     return social.marquerLus(avec);
@@ -659,6 +697,42 @@ app.whenReady().then(async () => {
 
     if (fenetreBibliotheque && !fenetreBibliotheque.isDestroyed()) {
       fenetreBibliotheque.webContents.send('social:nouveauxMessages', recus);
+    }
+  });
+
+  /* Les signaux de la voix vont droit à l'interface : c'est elle qui tient la
+     connexion. Le processus principal n'en retient qu'une chose — une sonnerie
+     mérite un avis système, parce qu'elle arrive souvent pendant une partie,
+     lanceur réduit, et qu'un appel qu'on ne voit pas est un appel manqué. */
+  social.surSignaux(async (signaux) => {
+    if (fenetreBibliotheque && !fenetreBibliotheque.isDestroyed()) {
+      fenetreBibliotheque.webContents.send('voix:signaux', signaux);
+    }
+
+    // Un appel qui se termine ferme son avis : une notification qui propose
+    // encore de répondre à quelqu'un qui a raccroché est pire qu'aucune.
+    for (const x of signaux) {
+      if (x.sorte !== 'raccroche') continue;
+      const fermer = sonneriesEnCours.get(x.appel);
+      if (fermer) { fermer(); sonneriesEnCours.delete(x.appel); }
+    }
+
+    const sonneries = signaux.filter((x) => x.sorte === 'sonne');
+    if (!sonneries.length) return;
+
+    const r = await social.amis();
+    const parId = new Map(r.ok ? (r.donnees.amis || []).map((a) => [a.id, a]) : []);
+
+    for (const x of sonneries) {
+      const ami = parId.get(x.de);
+      if (!ami) continue;
+      const fermer = avis.appelRecu(ami, () => {
+        montrerBibliotheque();
+        if (fenetreBibliotheque && !fenetreBibliotheque.isDestroyed()) {
+          fenetreBibliotheque.webContents.send('voix:decrocher', x.appel);
+        }
+      });
+      if (fermer) sonneriesEnCours.set(x.appel, fermer);
     }
   });
 

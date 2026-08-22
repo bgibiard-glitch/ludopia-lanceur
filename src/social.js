@@ -34,6 +34,9 @@ let vusParSalon = new Map();
 let horlogeInvitations = null;
 let dernierVu = 0;
 let ecouteActive = false;
+let surSignaux = () => {};
+let dernierSignal = 0;
+let ecouteVoixActive = false;
 
 // =============================================================================
 // Transport
@@ -110,6 +113,7 @@ function retenirSession(nouveauJeton, profil) {
   demarrerBattement();
   demarrerInvitations();
   calerLeCurseur().then(ecouterMessages);
+  calerLeSignal().then(ecouterVoix);
   prevenir();
 }
 
@@ -148,6 +152,8 @@ async function reprendre() {
   demarrerInvitations();
   await calerLeCurseur();
   ecouterMessages();
+  await calerLeSignal();
+  ecouterVoix();
   return true;
 }
 
@@ -253,6 +259,38 @@ async function ecouterMessages() {
   }
 }
 
+/**
+ * L'écoute des signaux de la voix.
+ *
+ * Séparée de celle des messages, et pour une raison de fond : une sonnerie ne
+ * peut pas attendre. Si les deux partageaient la même attente longue, un
+ * appel entrant resterait muet jusqu'à ce qu'un message veuille bien arriver.
+ * Deux requêtes ouvertes en parallèle coûtent deux connexions ; c'est le prix
+ * d'un téléphone qui sonne quand on l'appelle.
+ */
+async function ecouterVoix() {
+  if (ecouteVoixActive) return;
+  ecouteVoixActive = true;
+
+  try {
+    while (jeton) {
+      const r = await appel('GET', `/voix/signaux?depuis=${dernierSignal}&attendre=1`,
+        { delai: 32000 });
+      if (!jeton) break;
+
+      if (r.ok && (r.donnees.signaux || []).length) {
+        const recus = r.donnees.signaux;
+        dernierSignal = recus.reduce((n, m) => Math.max(n, Number(m.id) || 0), dernierSignal);
+        surSignaux(recus);
+      } else if (!r.ok && r.erreur !== 'delai_depasse') {
+        await new Promise((f) => setTimeout(f, 5000));
+      }
+    }
+  } finally {
+    ecouteVoixActive = false;
+  }
+}
+
 /** Au démarrage : on part du dernier message existant, pour ne pas signaler
  *  d'un coup tout l'historique d'une conversation. */
 async function calerLeCurseur() {
@@ -260,6 +298,21 @@ async function calerLeCurseur() {
   if (r.ok) {
     dernierVu = (r.donnees.messages || [])
       .reduce((n, m) => Math.max(n, Number(m.id) || 0), 0);
+  }
+}
+
+/**
+ * On se cale sur le dernier signal existant avant d'écouter.
+ *
+ * Sans cela, une reconnexion rejouerait les signaux d'appels déjà terminés —
+ * le lanceur sonnerait pour un appel d'il y a vingt minutes, auquel personne
+ * ne peut plus répondre.
+ */
+async function calerLeSignal() {
+  const r = await appel('GET', '/voix/signaux?depuis=0');
+  if (r.ok) {
+    dernierSignal = (r.donnees.signaux || [])
+      .reduce((n, x) => Math.max(n, Number(x.id) || 0), 0);
   }
 }
 
@@ -313,6 +366,7 @@ module.exports = {
   surMessages: (f) => { surMessages = f; },
   surInvitation: (f) => { surInvitation = f; },
   surMessageSalon: (f) => { surMessageSalon = f; },
+  surSignaux: (f) => { surSignaux = f; },
   salonVu: (id, jusqu) => vusParSalon.set(id, jusqu),
 
   amis: () => appel('GET', '/amis'),
@@ -369,6 +423,18 @@ module.exports = {
   ),
   envoyer: (vers, texte) => appel('POST', '/messages', { corps: { vers, texte } }),
   marquerLus: (avec) => appel('POST', '/messages/lus', { corps: { avec } }),
+
+  /* Le mode audio. Le service n'aiguille que la négociation : la voix va d'une
+     machine à l'autre sans repasser par lui. */
+  glace: () => appel('GET', '/voix/glace'),
+  appelerVoix: (vers) => appel('POST', '/voix/appeler', { corps: { vers } }),
+  repondreVoix: (appelId, accepte) =>
+    appel('POST', '/voix/repondre', { corps: { appel: appelId, accepte } }),
+  raccrocherVoix: (appelId, raison) =>
+    appel('POST', '/voix/raccrocher', { corps: { appel: appelId, raison } }),
+  signalVoix: (appelId, sorte, charge) =>
+    appel('POST', '/voix/signal', { corps: { appel: appelId, sorte, charge } }),
+  etatVoix: (appelId) => appel('GET', `/voix/etat?appel=${encodeURIComponent(appelId)}`),
 
   actualites: () => appel('GET', '/actualites', { avecJeton: false }),
   classement: () => appel('GET', '/classement', { avecJeton: false }),

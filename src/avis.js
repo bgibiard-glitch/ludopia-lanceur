@@ -30,7 +30,8 @@ const enCours = new Map();
 /* Les réglages de l'utilisateur. Ils sont consultés au moment d'afficher, pas
    au moment de brancher : changer un interrupteur doit agir tout de suite. */
 let regles = {
-  avisMessages: true, avisSalons: true, avisInvitations: true, son: true,
+  avisMessages: true, avisSalons: true, avisInvitations: true,
+  avisAppels: true, son: true,
 };
 
 let ouvrirConversation = () => {};
@@ -124,6 +125,40 @@ function invitationRecue(ami, jeu, nomDuJeu, rejoindre) {
 }
 
 /**
+ * Quelqu'un appelle.
+ *
+ * C'est le seul avis qui s'affiche même quand la fenêtre est sous les yeux :
+ * un appel se rate en dix secondes, et l'écran regardé n'est pas forcément
+ * celui des amis. Il ne se tait jamais non plus — une sonnerie muette n'est
+ * pas une sonnerie.
+ */
+function appelRecu(ami, decrocher) {
+  if (!Notification.isSupported()) return null;
+  if (!regles.avisAppels) return null;
+
+  const cle = `appel:${ami.id}`;
+  const precedent = enCours.get(cle);
+  if (precedent) precedent.close();
+
+  const avis = new Notification({
+    title: `${ami.pseudo} vous appelle`,
+    body: 'Répondre depuis Ludopia.',
+    icon: iconeAvis(),
+    actions: [{ type: 'button', text: 'Répondre' }],
+    urgency: 'critical',
+    silent: false,
+  });
+
+  avis.on('action', () => { enCours.delete(cle); decrocher(); });
+  avis.on('click', () => { enCours.delete(cle); decrocher(); });
+  avis.on('close', () => enCours.delete(cle));
+
+  avis.show();
+  enCours.set(cle, avis);
+  return () => { avis.close(); enCours.delete(cle); };
+}
+
+/**
  * Un ou plusieurs messages dans un salon.
  *
  * Le titre porte le nom du salon, pas celui de l'auteur : c'est le lieu qu'on
@@ -173,6 +208,6 @@ function brancher({ ouvrir, visible, conversation, salon }) {
 }
 
 module.exports = {
-  brancher, messageRecu, messageSalonRecu, invitationRecue, vuePar,
+  brancher, messageRecu, messageSalonRecu, invitationRecue, appelRecu, vuePar,
   reglages: (r) => { regles = { ...regles, ...r }; },
 };

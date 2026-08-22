@@ -1450,6 +1450,13 @@ function ouvrirReglages() {
 // Amis
 // =============================================================================
 
+const ICONE_APPEL =
+  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" '
+  + 'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'
+  + '<path d="M6.5 3h-3A1.5 1.5 0 0 0 2 4.6C2 13.1 10.9 22 19.4 22a1.5 1.5 0 0 0 '
+  + '1.6-1.5v-3a1 1 0 0 0-.8-1l-3.4-.7a1 1 0 0 0-1 .4l-1 1.3a14 14 0 0 1-5.3-5.3l'
+  + '1.3-1a1 1 0 0 0 .4-1l-.7-3.4a1 1 0 0 0-1-.8Z" /></svg>';
+
 const ICONE_AMIS =
   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" '
   + 'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'
@@ -1946,7 +1953,23 @@ function dessinerConversation(scene) {
   sous.append(e.texte);
   qui.append(nom, sous);
 
-  tete.append(retour, qui);
+  /* Appeler. Le bouton n'apparaît que si la personne est en ligne : faire
+     sonner quelqu'un qui n'a pas le lanceur ouvert ne produit rien, et un
+     bouton qui ne fait rien use la confiance plus vite qu'un bouton absent. */
+  const barreTete = document.createElement('div');
+  barreTete.className = 'conv-actions';
+  if (ami.enLigne && !enAppelAvec(ami.id)) {
+    const appelBouton = document.createElement('button');
+    appelBouton.type = 'button';
+    appelBouton.className = 'conv-appel';
+    appelBouton.title = TV().appeler;
+    appelBouton.setAttribute('aria-label', TV().appeler);
+    appelBouton.innerHTML = ICONE_APPEL;
+    appelBouton.addEventListener('click', () => appelerAmi(ami));
+    barreTete.append(appelBouton);
+  }
+
+  tete.append(retour, qui, barreTete);
   bloc.append(tete);
 
   // --- fil ---
@@ -2895,6 +2918,10 @@ async function demarrer() {
     }
     suivreLeSocial();
   });
+
+  // Le mode audio écoute dès le démarrage : un appel doit pouvoir arriver
+  // sans qu'on soit passé par l'écran des amis.
+  brancherVoix();
 
   window.ludopia.social.surOuvertureDemandee((idAmi) => {
     ouvrirConversation(idAmi);
