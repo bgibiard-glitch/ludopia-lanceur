@@ -151,6 +151,11 @@ contextBridge.exposeInMainWorld('ludopia', {
   surimpression: {
     basculer: () => ipcRenderer.send('surimpression:basculer'),
     masquer: () => ipcRenderer.send('surimpression:masquer'),
+    surSalon: (rappel) => {
+      const ecouteur = (_evt, d) => rappel(d);
+      ipcRenderer.on('surimpression:salon', ecouteur);
+      return () => ipcRenderer.removeListener('surimpression:salon', ecouteur);
+    },
   },
 
   theme: {

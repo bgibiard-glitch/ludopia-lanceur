@@ -68,6 +68,13 @@
     }
   });
 
+  // --- les salons aussi : on lit, on ne répond pas d'ici ----------------------
+  window.ludopia.surimpression.surSalon(({ salon, messages }) => {
+    for (const m of messages) {
+      pousser(m.pseudo || '…', m.texte, `${salon.emoji || ''} ${salon.nom}`.trim());
+    }
+  });
+
   // --- répondre --------------------------------------------------------------
   form.addEventListener('submit', async (evt) => {
     evt.preventDefault();

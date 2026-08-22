@@ -853,6 +853,15 @@ app.whenReady().then(async () => {
     if (fenetreBibliotheque && !fenetreBibliotheque.isDestroyed()) {
       fenetreBibliotheque.webContents.send('social:nouveauxMessages', messages);
     }
+    // La surimpression affiche aussi la vie des salons — c'est souvent là que
+    // ça parle pendant qu'on joue. Un canal dédié : le nom du salon fait
+    // partie du message affiché, pas de la conversation à qui répondre.
+    if (fenetreSurimpression && !fenetreSurimpression.isDestroyed()) {
+      fenetreSurimpression.webContents.send('surimpression:salon', {
+        salon: { id: salon.id, nom: salon.nom, emoji: salon.emoji },
+        messages,
+      });
+    }
   });
 
   social.surMessages(async (recus) => {
