@@ -51,6 +51,15 @@
           </svg>
           <span class="rail-salons-libelle">Salons</span>
         </button>
+        <button class="rail-accueil rail-boutique" id="boutiqueBouton" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+               stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/>
+            <path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/>
+          </svg>
+          <span class="rail-boutique-libelle">Boutique</span>
+          <b class="rail-ludos" id="railLudos" hidden></b>
+        </button>
         <p class="rail-titre" data-t="bibliotheque">Bibliothèque</p>
         <input class="rail-recherche" id="recherche" type="search" placeholder="Chercher un jeu…"
                autocomplete="off" spellcheck="false" />
@@ -87,6 +96,7 @@
 
     <script src="voix.js"></script>
     <script src="serveurs.js"></script>
+    <script src="boutique.js"></script>
     <script src="lanceur.js"></script>
   </body>
 </html>

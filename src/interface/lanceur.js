@@ -129,6 +129,7 @@ const TEXTES = {
     serieTenue: (n) => `Série de ${n} jour${n > 1 ? 's' : ''} : vous avez joué tous les deux aujourd’hui.`,
     serieAVous: 'Votre série tient encore aujourd’hui — il ne manque que vous.',
     serieAlui: (n) => `Série de ${n} jour${n > 1 ? 's' : ''} en péril : il manque votre ami aujourd’hui.`,
+    boutique: 'Boutique',
     themeTitre: 'Apparence',
     themeAide: 'Suivre le système, ou choisir. Le changement est immédiat.',
     themeSysteme: 'Système',
@@ -317,6 +318,7 @@ const TEXTES = {
     serieTenue: (n) => `${n}-day streak: you both played today.`,
     serieAVous: 'Your streak still stands today — only you are missing.',
     serieAlui: (n) => `${n}-day streak at risk: your friend has not played today.`,
+    boutique: 'Shop',
     themeTitre: 'Appearance',
     themeAide: 'Follow the system, or choose. The change is immediate.',
     themeSysteme: 'System',
@@ -3034,6 +3036,20 @@ async function demarrer() {
   // Le mode audio écoute dès le démarrage : un appel doit pouvoir arriver
   // sans qu'on soit passé par l'écran des amis.
   brancherVoix();
+
+  $('#boutiqueBouton')?.addEventListener('click', ouvrirBoutique);
+
+  /* Le solde sur le bouton, rafraîchi à la connexion : il donne une raison
+     d'ouvrir la boutique sans y penser, et c'est toute la mécanique. */
+  (async () => {
+    if (!etat.social.connecte) return;
+    const r = await window.ludopia.bourse.lire();
+    const pastille = $('#railLudos');
+    if (r.ok && pastille) {
+      pastille.textContent = `${r.donnees.solde} Ⱡ`;
+      pastille.hidden = false;
+    }
+  })();
 
   window.ludopia.social.surOuvertureDemandee((idAmi) => {
     ouvrirConversation(idAmi);

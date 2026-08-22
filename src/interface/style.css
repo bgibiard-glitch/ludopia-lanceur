@@ -1101,9 +1101,11 @@ body:not(.mac) .barre {
   text-wrap: pretty;
 }
 .bulle--erreur {
-  color: #ffd7e6;
-  background: color-mix(in srgb, #ff5c9d 18%, transparent);
-  border: 1px solid color-mix(in srgb, #ff5c9d 40%, transparent);
+  /* La couleur du texte vient du thème : le rose pâle d'origine était pensé
+     pour un fond sombre, et devenait du rose sur rose en thème clair. */
+  color: var(--rouge);
+  background: color-mix(in srgb, var(--rouge) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--rouge) 38%, transparent);
 }
 .bulle--calme {
   color: var(--ink-dim);
@@ -2905,3 +2907,88 @@ body.dans-serveur .scene {
   display: flex;
   flex-direction: column;
 }
+
+/* ============================================================
+   LA BOUTIQUE
+   ============================================================ */
+
+.rail-ludos {
+  margin-left: auto;
+  padding: 0.1rem 0.5rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--or);
+  background: color-mix(in srgb, var(--or) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--or) 30%, transparent);
+  border-radius: 999px;
+}
+
+.bout-tete { display: flex; flex-wrap: wrap; align-items: center; gap: 1rem; }
+.bout-tete h1 { margin-right: auto; }
+
+.bout-solde {
+  display: flex;
+  align-items: baseline;
+  gap: 0.3rem;
+  padding: 0.5rem 0.9rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+.bout-solde b {
+  font-family: var(--font-display);
+  font-size: 1.3rem;
+  color: var(--or);
+}
+.bout-solde span { font-size: 0.8rem; color: var(--muted); }
+
+.bout-note { margin-top: -0.6rem; }
+
+.bout-grille {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 150px), 1fr));
+  gap: 0.8rem;
+}
+
+.bout-carte {
+  display: grid;
+  justify-items: center;
+  gap: 0.4rem;
+  padding: 0.9rem 0.8rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  text-align: center;
+}
+.bout-carte--rare { border-color: color-mix(in srgb, #4d8dff 45%, transparent); }
+.bout-carte--epique { border-color: color-mix(in srgb, #c084fc 50%, transparent); }
+.bout-carte--legendaire {
+  border-color: color-mix(in srgb, var(--or) 55%, transparent);
+  box-shadow: 0 0 22px color-mix(in srgb, var(--or) 18%, transparent);
+}
+
+.bout-vignette { width: 64px; height: 64px; border-radius: 14px; }
+/* Les emplacements se distinguent d'un trait : un chapeau se pose, une aura
+   entoure. Le detail est modeste mais il rythme la grille. */
+.bout-vignette[data-emplacement="aura"] { border-radius: 50%; }
+.bout-vignette[data-emplacement="banniere"] { width: 96px; height: 40px; }
+
+.bout-nom { font-weight: 600; font-size: 0.9rem; }
+.bout-sous { font-size: 0.72rem; color: var(--muted); }
+
+.bout-action { width: 100%; }
+.bout-action--porte {
+  border-color: var(--vert);
+  color: var(--vert);
+}
+
+.bout-mouvement {
+  display: flex;
+  gap: 0.6rem;
+  padding: 0.3rem 0;
+  font-size: 0.86rem;
+  color: var(--ink-dim);
+  border-bottom: 1px solid var(--line);
+}
+.bout-mouvement b[data-sens="+"] { color: var(--vert); }
+.bout-mouvement b { min-width: 64px; font-variant-numeric: tabular-nums; }
