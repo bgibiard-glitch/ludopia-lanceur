@@ -54,6 +54,13 @@
      restée noire flotterait au-dessus d'une interface blanche. */
   --voile: 6, 6, 15;
 
+  /* Le contour des blocs média — affiches, cartes « Reprendre » : tout ce qui
+     porte une image sombre. Il se règle sur la PAGE, pas sur le bloc : ces
+     blocs redéfinissent `--line` en blanc pour leur propre texte clair, et
+     leur bordure devenait blanche à 16 % — invisible sur fond clair, d'où des
+     aplats sans bord qui flottaient. */
+  --bord-media: rgba(255, 255, 255, 0.1);
+
   --carte: var(--bg-3);
   --carte2: var(--bg-2);
   --trait: var(--line);
@@ -91,6 +98,7 @@
   --rouge: #d43a5c;
 
   --voile: 255, 255, 255;
+  --bord-media: rgba(16, 16, 44, 0.22);
 }
 
 * {
@@ -397,6 +405,8 @@ body:not(.mac) .barre {
   padding: 40px 44px 30px;
   overflow: hidden;
   isolation: isolate;
+  border: 1px solid var(--bord-media);
+  border-radius: 20px;
 }
 
 /* Les captures sont des captures de JEU : elles portent des boutons et des
@@ -915,7 +925,7 @@ body:not(.mac) .barre {
   border-radius: var(--radius, 18px);
   overflow: hidden;
   isolation: isolate;
-  border: 1px solid var(--line);
+  border: 1px solid var(--bord-media);
 }
 .reprise-fond {
   position: absolute;
