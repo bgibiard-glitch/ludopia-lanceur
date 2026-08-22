@@ -132,6 +132,8 @@ const TEXTES = {
     boutique: 'Boutique',
     editerProfil: 'Personnaliser',
     offrirLudos: 'Offrir des Ludos',
+    avisSeries: 'Séries en péril',
+    avisSeriesAide: 'Le soir, vous prévenir quand une série d’amitié se rompt si vous ne jouez pas tous les deux.',
     offrirCombien: 'Combien ?',
     offrirMot: 'Un petit mot (facultatif)',
     offrirEnvoyer: 'Offrir',
@@ -339,6 +341,8 @@ const TEXTES = {
     boutique: 'Shop',
     editerProfil: 'Customise',
     offrirLudos: 'Gift Ludos',
+    avisSeries: 'Streaks at risk',
+    avisSeriesAide: 'In the evening, warn you when a friendship streak will break unless you both play.',
     offrirCombien: 'How many?',
     offrirMot: 'A little note (optional)',
     offrirEnvoyer: 'Gift',
@@ -1663,6 +1667,8 @@ function dessinerReglages() {
     interrupteur(r.avisSalons, (v) => enregistrerReglage('avisSalons', v))));
   blocAvis.append(ligneReglage(t.avisInvitations, t.avisInvitationsAide,
     interrupteur(r.avisInvitations, (v) => enregistrerReglage('avisInvitations', v))));
+  blocAvis.append(ligneReglage(t.avisSeries, t.avisSeriesAide,
+    interrupteur(r.avisSeries !== false, (v) => enregistrerReglage('avisSeries', v))));
   blocAvis.append(ligneReglage(t.avisSon, t.avisSonAide,
     interrupteur(r.son, (v) => enregistrerReglage('son', v))));
   scene.append(blocAvis);

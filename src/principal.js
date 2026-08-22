@@ -31,6 +31,7 @@ const REGLAGES_DEFAUT = {
   avisSalons: true,
   avisInvitations: true,
   avisAppels: true,
+  avisSeries: true,
   son: true,
   demarrerReduit: false,
   /* 'systeme' | 'sombre' | 'clair'. Le défaut suit le système : quelqu'un qui a
@@ -931,6 +932,26 @@ app.whenReady().then(async () => {
       await social.invitationVue(inv.id);
     }
   });
+
+  /* La ronde du soir : entre dix-huit heures et minuit, heure locale, on
+     regarde une fois par heure si des séries se perdent aujourd'hui. C'est le
+     lanceur qui décide de l'heure — le service n'a ni le fuseau de chacun, ni
+     le droit de décréter qu'il est vingt heures quelque part. Un avis par
+     série et par soirée, pas un tir de barrage. */
+  const seriesPrevenues = new Set();
+  setInterval(async () => {
+    const heure = new Date().getHours();
+    if (heure < 18) { seriesPrevenues.clear(); return; }
+    if (!social.etat().connecte) return;
+
+    const r = await social.seriesEnPeril();
+    if (!r.ok) return;
+    for (const x of r.donnees.enPeril || []) {
+      if (!x.pseudo || seriesPrevenues.has(x.ami)) continue;
+      seriesPrevenues.add(x.ami);
+      avis.serieEnPeril(x.pseudo, x.jours, () => montrerBibliotheque());
+    }
+  }, 3600 * 1000);
 
   social.surChangement(() => {
     if (fenetreBibliotheque && !fenetreBibliotheque.isDestroyed()) {

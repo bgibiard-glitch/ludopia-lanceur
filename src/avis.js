@@ -31,7 +31,7 @@ const enCours = new Map();
    au moment de brancher : changer un interrupteur doit agir tout de suite. */
 let regles = {
   avisMessages: true, avisSalons: true, avisInvitations: true,
-  avisAppels: true, son: true,
+  avisAppels: true, avisSeries: true, son: true,
 };
 
 let ouvrirConversation = () => {};
@@ -159,6 +159,32 @@ function appelRecu(ami, decrocher) {
 }
 
 /**
+ * Une série d'amitié risque de se rompre ce soir.
+ *
+ * Le seul avis du lanceur qui ne réagit pas à un événement : il prévient d'une
+ * absence. C'est aussi le plus efficace — il donne une raison de lancer un jeu
+ * qui ne vient pas du jeu, mais de quelqu'un.
+ */
+function serieEnPeril(pseudo, jours, ouvrir) {
+  if (!Notification.isSupported()) return;
+  if (!regles.avisSeries) return;
+
+  const cle = `serie:${pseudo}`;
+  if (enCours.has(cle)) return;
+
+  const avis = new Notification({
+    title: `🔥 Série de ${jours} jour${jours > 1 ? 's' : ''} avec ${pseudo}`,
+    body: 'Elle se rompt ce soir si vous ne jouez pas tous les deux. Une petite partie ?',
+    icon: iconeAvis(),
+    silent: !regles.son,
+  });
+  avis.on('click', () => { enCours.delete(cle); ouvrir(); });
+  avis.on('close', () => enCours.delete(cle));
+  avis.show();
+  enCours.set(cle, avis);
+}
+
+/**
  * Un ou plusieurs messages dans un salon.
  *
  * Le titre porte le nom du salon, pas celui de l'auteur : c'est le lieu qu'on
@@ -208,6 +234,6 @@ function brancher({ ouvrir, visible, conversation, salon }) {
 }
 
 module.exports = {
-  brancher, messageRecu, messageSalonRecu, invitationRecue, appelRecu, vuePar,
+  brancher, messageRecu, messageSalonRecu, invitationRecue, appelRecu, serieEnPeril, vuePar,
   reglages: (r) => { regles = { ...regles, ...r }; },
 };

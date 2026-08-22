@@ -477,6 +477,7 @@ module.exports = {
     appel('POST', '/bourse/offrir', { corps: { vers, montant, mot } }),
 
   mesSeries: () => appel('GET', '/series'),
+  seriesEnPeril: () => appel('GET', '/series/peril'),
 
   entrerEnVoixSalon: (salon) => appel('POST', '/voix/salon/entrer', { corps: { salon } }),
   battementVoixSalon: (salon, muet) =>
