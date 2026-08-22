@@ -52,11 +52,21 @@ def empreinte(chemin):
 
 
 def a_publier():
-    """Les installateurs présents dans dist/, hors fichiers annexes."""
+    """Les installateurs de LA version courante, hors fichiers annexes.
+
+    Le filtre sur la version n'est pas un raffinement : `dist/` garde les
+    paquets des compilations précédentes, et sans lui la release v2.3.0 s'est
+    retrouvée avec l'installateur de la 2.2.0, puis la v2.4.0 avec ceux de la
+    2.3.0. Une page de téléchargement qui propose trois versions n'inspire
+    rien de bon.
+    """
+    v = version()
     trouves = []
     for motif, famille in FAMILLES:
         for f in sorted(DIST.glob(motif)):
             if f.name.endswith(('.blockmap', '.yml', '.yaml')):
+                continue
+            if v not in f.name:
                 continue
             trouves.append((f, famille))
     return trouves
