@@ -3266,3 +3266,85 @@ body.dans-serveur .scene {
 .neuf h2 { margin-bottom: 0.5rem; }
 .neuf-ligne { padding: 0.2rem 0; font-size: 0.95rem; }
 .neuf .btn-mini { margin-top: 0.7rem; }
+
+
+/* ============================================================
+   LES SONDAGES
+   ============================================================ */
+.sondage {
+  margin-top: 0.9rem;
+  max-width: 480px;
+  padding: 0.9rem 1rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--brand);
+  border-radius: 14px;
+}
+.sondage-question { font-weight: 700; }
+.sondage-sous { margin: 0.1rem 0 0.7rem; font-size: 0.78rem; color: var(--muted); }
+
+.sondage-choix {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  width: 100%;
+  margin-bottom: 0.4rem;
+  padding: 0.5rem 0.8rem;
+  font: inherit;
+  color: var(--ink);
+  text-align: left;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  overflow: hidden;
+  cursor: pointer;
+}
+.sondage-choix:disabled { cursor: default; opacity: 0.85; }
+.sondage-choix i {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: color-mix(in srgb, var(--brand) 16%, transparent);
+  transition: width 0.35s var(--ease);
+}
+.sondage-choix span { position: relative; flex: 1; min-width: 0; }
+.sondage-choix b { position: relative; font-variant-numeric: tabular-nums; color: var(--muted); }
+.sondage-choix--mien { border-color: var(--brand); }
+.sondage-choix--mien b { color: var(--brand); }
+
+.sondage-form {
+  flex-basis: 100%;
+  display: grid;
+  gap: 0.45rem;
+  padding: 0.8rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+.sondage-form input {
+  padding: 0.5rem 0.75rem;
+  font: inherit;
+  color: inherit;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: 9px;
+}
+
+.membre { position: relative; }
+.membre-exclure {
+  position: absolute;
+  right: 0.4rem;
+  top: 50%;
+  transform: translateY(-50%);
+  display: none;
+  width: 22px;
+  height: 22px;
+  font: inherit;
+  font-size: 0.72rem;
+  color: var(--rouge);
+  background: var(--bg-2);
+  border: 1px solid color-mix(in srgb, var(--rouge) 40%, transparent);
+  border-radius: 7px;
+  cursor: pointer;
+}
+.membre:hover .membre-exclure { display: block; }

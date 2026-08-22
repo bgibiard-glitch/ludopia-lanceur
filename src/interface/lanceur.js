@@ -99,7 +99,7 @@ const TEXTES = {
     emojis: 'Emojis',
     reagir: 'Réagir',
     monStatut: 'Votre statut',
-    statutExemple: 'Cherche des joueurs…',
+    statutExemple: 'Votre statut — ex. : cherche des joueurs…',
     enregistrer: 'Enregistrer',
     voirProfil: 'Profil',
     fermerProfil: 'Fermer',
@@ -326,7 +326,7 @@ const TEXTES = {
     emojis: 'Emoji',
     reagir: 'React',
     monStatut: 'Your status',
-    statutExemple: 'Looking for players…',
+    statutExemple: 'Your status — e.g.: looking for players…',
     enregistrer: 'Save',
     voirProfil: 'Profile',
     fermerProfil: 'Close',
@@ -503,6 +503,11 @@ const T = () => TEXTES[etat.langue];
    déjà, sur GitHub. On garde ici ce qui se VOIT. */
 const NOUVEAUTES = {
   fr: {
+    '2.9.0': [
+      '📊 Les sondages : « on joue à quoi ce soir ? », posé en un clic dans un salon, compté tout seul.',
+      '✕ Les modérateurs peuvent exclure directement depuis la liste des membres.',
+      '🧹 Fini les messages en double après un rechargement de salon.',
+    ],
     '2.8.0': [
       '🗓 Les rendez-vous de serveur : planifiez une soirée, chacun s’inscrit en un clic.',
       '↩ Répondez à un message précis dans les salons — survolez, cliquez ↩.',
@@ -510,6 +515,11 @@ const NOUVEAUTES = {
     ],
   },
   en: {
+    '2.9.0': [
+      '📊 Polls: “what are we playing tonight?”, asked in one click, counted by itself.',
+      '✕ Moderators can kick straight from the member list.',
+      '🧹 No more duplicated messages after reloading a channel.',
+    ],
     '2.8.0': [
       '🗓 Server events: plan an evening, everyone signs up in one click.',
       '↩ Reply to a specific message in channels — hover, click ↩.',

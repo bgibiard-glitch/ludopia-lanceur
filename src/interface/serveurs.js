@@ -70,6 +70,16 @@ const T_SRV = {
     ecrire: 'Votre message…',
     repondre: 'Répondre',
     rendezVous: 'Rendez-vous',
+    sondage: 'Sondage',
+    sondageQuestion: 'Votre question…',
+    sondageChoix: (n) => `Choix ${n}`,
+    sondagePoser: 'Poser',
+    sondageVotants: (n) => `${n} vote${n > 1 ? 's' : ''}`,
+    sondageFerme: 'Terminé',
+    sondagePar: (qui) => `sondage de ${qui}`,
+    exclure: 'Exclure',
+    exclureSur: 'Exclure, vraiment ?',
+    roleDe: 'Rôles de ce membre',
     planifier: 'Planifier un rendez-vous',
     evTitre: 'Quoi ?',
     evQuand: 'Quand ?',
@@ -151,6 +161,16 @@ const T_SRV = {
     ecrire: 'Your message…',
     repondre: 'Reply',
     rendezVous: 'Events',
+    sondage: 'Poll',
+    sondageQuestion: 'Your question…',
+    sondageChoix: (n) => `Choice ${n}`,
+    sondagePoser: 'Ask',
+    sondageVotants: (n) => `${n} vote${n > 1 ? 's' : ''}`,
+    sondageFerme: 'Closed',
+    sondagePar: (qui) => `poll by ${qui}`,
+    exclure: 'Kick',
+    exclureSur: 'Kick, really?',
+    roleDe: 'Roles of this member',
     planifier: 'Plan an event',
     evTitre: 'What?',
     evQuand: 'When?',
@@ -241,6 +261,7 @@ const srv = {
   vue: null,           // null | 'annuaire' | 'creation' | 'reglages' | 'roles'
   sequence: 0,         // garde contre une réponse tardive qui écraserait la suite
   reponseA: null,      // le message que la saisie citera, ou null
+  sondages: new Map(), // id -> sondage, pour dessiner les blocs dans le fil
 };
 
 // =============================================================================
@@ -312,29 +333,44 @@ async function chargerSalonServeur(salon) {
   srv.reponseA = null;
   dessinerServeur();
 
-  const r = await window.ludopia.social.messagesSalon(salon, 0);
+  const [r, sd] = await Promise.all([
+    window.ludopia.social.messagesSalon(salon, 0),
+    window.ludopia.sondages.liste(salon),
+  ]);
   if (srv.sequence !== jeton) return;
+  if (sd.ok) {
+    srv.sondages = new Map((sd.donnees.sondages || []).map((x) => [x.id, x]));
+  }
   if (r.ok) {
     srv.messages = r.donnees.messages || [];
     dessinerServeur();
     const fil = $('.srv-fil');
     if (fil) fil.scrollTop = fil.scrollHeight;
     window.ludopia.social.salonLu(salon, srv.messages.at(-1)?.id || 0);
-    suivreSalonServeur(salon);
+    suivreSalonServeur(salon, jeton);
   }
 }
 
-/** Attente longue sur le salon affiché. S'arrête dès qu'on en change. */
-async function suivreSalonServeur(salon) {
-  while (srv.salon === salon && srv.ouvert) {
+/**
+ * Attente longue sur le salon affiché.
+ *
+ * Le jeton de séquence est la condition d'arrêt, pas seulement l'identifiant
+ * du salon : recharger LE MÊME salon relançait une seconde boucle pendant que
+ * la première attendait encore sa réponse — et chaque message arrivait en
+ * double. Poser un sondage suffisait à le voir : son annonce s'affichait deux
+ * fois.
+ */
+async function suivreSalonServeur(salon, jeton) {
+  while (srv.sequence === jeton && srv.salon === salon && srv.ouvert) {
     const depuis = srv.messages.at(-1)?.id || 0;
     const r = await window.ludopia.social.attendreSalon(salon, depuis);
-    if (srv.salon !== salon) return;
+    if (srv.sequence !== jeton || srv.salon !== salon) return;
 
     if (r.ok && (r.donnees.messages || []).length) {
       const fil = $('.srv-fil');
       const enBas = fil ? fil.scrollHeight - fil.scrollTop - fil.clientHeight < 60 : true;
-      srv.messages.push(...r.donnees.messages);
+      const connus = new Set(srv.messages.map((x) => x.id));
+      srv.messages.push(...r.donnees.messages.filter((x) => !connus.has(x.id)));
       dessinerServeur();
       // On ne fait descendre le fil que si l'on y était déjà : sinon on
       // arrache la lecture de quelqu'un qui remontait la conversation.
@@ -756,6 +792,14 @@ function dessinerSalonTexte(scene, salon) {
   });
   form.append(bEmoji);
 
+  const bSondage = document.createElement('button');
+  bSondage.type = 'button';
+  bSondage.className = 'btn-mini';
+  bSondage.textContent = '\u{1F4CA}';
+  bSondage.title = t.sondage;
+  bSondage.addEventListener('click', () => ouvrirFormulaireSondage(salon.id));
+  form.append(bSondage);
+
   const envoyer = document.createElement('button');
   envoyer.type = 'submit';
   envoyer.className = 'jouer';
@@ -796,6 +840,14 @@ function dessinerSalonTexte(scene, salon) {
 }
 
 function messageSalon(m, groupe) {
+  /* L'annonce d'un sondage porte une marque : à sa place, on dessine le bloc
+     de vote. Si le sondage a été purgé (plus vieux qu'une semaine), le
+     message redevient du texte ordinaire — la trace reste. */
+  const marque = /^\u{1F4CA}\[sondage:([a-z0-9]+)\]/u.exec(m.texte || '');
+  if (marque && srv.sondages.has(marque[1])) {
+    return blocSondage(srv.sondages.get(marque[1]), m);
+  }
+
   const el = document.createElement('div');
   el.className = groupe ? 'srv-msg srv-msg--suite' : 'srv-msg';
 
@@ -933,6 +985,120 @@ function dessinerSalonVocal(scene, salon) {
 }
 
 // =============================================================================
+// Les sondages
+// =============================================================================
+
+function blocSondage(sd, message) {
+  const t = TS();
+  const el = document.createElement('div');
+  el.className = 'sondage';
+  el.dataset.msg = message.id;
+
+  const tete = document.createElement('p');
+  tete.className = 'sondage-question';
+  tete.textContent = `\u{1F4CA} ${sd.question}`;
+  el.append(tete);
+
+  const sous = document.createElement('p');
+  sous.className = 'sondage-sous';
+  sous.textContent = `${t.sondagePar(sd.par)} · ${t.sondageVotants(sd.votants)}`
+    + (sd.ouvert ? '' : ` · ${t.sondageFerme}`);
+  el.append(sous);
+
+  const total = Math.max(sd.votants, 1);
+  sd.choix.forEach((choix, i) => {
+    const ligne = document.createElement('button');
+    ligne.type = 'button';
+    ligne.className = sd.monChoix === i ? 'sondage-choix sondage-choix--mien' : 'sondage-choix';
+    ligne.disabled = !sd.ouvert;
+
+    const barre = document.createElement('i');
+    barre.style.width = `${Math.round((sd.totaux[i] / total) * 100)}%`;
+    ligne.append(barre);
+
+    const libelle = document.createElement('span');
+    libelle.textContent = choix;
+    ligne.append(libelle);
+
+    const compte = document.createElement('b');
+    compte.textContent = String(sd.totaux[i]);
+    ligne.append(compte);
+
+    ligne.addEventListener('click', async () => {
+      const r = await window.ludopia.sondages.voter(sd.id, i);
+      if (!r.ok) return;
+      sd.totaux = r.donnees.totaux;
+      sd.monChoix = r.donnees.monChoix;
+      sd.votants = sd.totaux.reduce((a, b) => a + b, 0);
+      srv.sondages.set(sd.id, sd);
+      dessinerServeur();
+    });
+    el.append(ligne);
+  });
+
+  return el;
+}
+
+/** Ouvre le petit formulaire de sondage sous la saisie. */
+function ouvrirFormulaireSondage(salonId) {
+  const t = TS();
+  const forme = document.querySelector('.srv-ecrire');
+  if (!forme || forme.querySelector('.sondage-form')) return;
+
+  const bloc = document.createElement('div');
+  bloc.className = 'sondage-form';
+
+  const question = document.createElement('input');
+  question.type = 'text';
+  question.placeholder = t.sondageQuestion;
+  question.maxLength = 120;
+  bloc.append(question);
+
+  const champsChoix = [];
+  for (let i = 0; i < 3; i += 1) {
+    const c = document.createElement('input');
+    c.type = 'text';
+    c.placeholder = t.sondageChoix(i + 1);
+    c.maxLength = 40;
+    champsChoix.push(c);
+    bloc.append(c);
+  }
+
+  const retour = document.createElement('div');
+  bloc.append(retour);
+
+  const barre = document.createElement('div');
+  barre.className = 'ami-actions';
+  const poser = document.createElement('button');
+  poser.type = 'button';
+  poser.className = 'jouer jouer--mini';
+  poser.textContent = t.sondagePoser;
+  poser.addEventListener('click', async () => {
+    retour.textContent = '';
+    const r = await window.ludopia.sondages.creer({
+      salon: salonId,
+      question: question.value,
+      choix: champsChoix.map((c) => c.value).filter((v) => v.trim()),
+    });
+    if (!r.ok) { retour.append(bulle(messageErreur(r.erreur, r.detail))); return; }
+    bloc.remove();
+    chargerSalonServeur(salonId);
+  });
+  barre.append(poser);
+
+  const fermer = document.createElement('button');
+  fermer.type = 'button';
+  fermer.className = 'btn-mini';
+  fermer.textContent = '✕';
+  fermer.addEventListener('click', () => bloc.remove());
+  barre.append(fermer);
+  bloc.append(barre);
+
+  forme.append(bloc);
+  question.focus();
+}
+
+// =============================================================================
 // La liste des membres
 // =============================================================================
 
@@ -1012,6 +1178,29 @@ function carteMembre(m) {
 
   el.append(bloc);
   el.addEventListener('click', () => ouvrirProfil(m.id));
+
+  /* Exclure, pour qui en a le droit — sauf le propriétaire, intouchable. La
+     confirmation tient en deux clics sur le même bouton, comme partout. */
+  if (peutIci('exclure') && m.role !== 'proprietaire' && m.id !== etat.social.moi?.id) {
+    const sortir = document.createElement('button');
+    sortir.type = 'button';
+    sortir.className = 'membre-exclure';
+    sortir.textContent = '✕';
+    sortir.title = t.exclure;
+    sortir.addEventListener('click', async (evt) => {
+      evt.stopPropagation();
+      if (sortir.dataset.sur !== '1') {
+        sortir.dataset.sur = '1';
+        sortir.textContent = '?';
+        sortir.title = t.exclureSur;
+        setTimeout(() => { sortir.dataset.sur = ''; sortir.textContent = '✕'; }, 3000);
+        return;
+      }
+      const r = await window.ludopia.serveurs.exclure(srv.ouvert, m.id);
+      if (r.ok) chargerMembres(srv.ouvert);
+    });
+    el.append(sortir);
+  }
   return el;
 }
 

@@ -487,6 +487,10 @@ module.exports = {
   annulerEvenement: (evenement) =>
     appel('POST', '/evenements/annuler', { corps: { evenement } }),
   mesEvenements: () => appel('GET', '/evenements/miens'),
+  creerSondage: (d) => appel('POST', '/sondages', { corps: d }),
+  sondages: (salon) => appel('GET', `/sondages?salon=${encodeURIComponent(salon)}`),
+  voterSondage: (sondage, choix) =>
+    appel('POST', '/sondages/voter', { corps: { sondage, choix } }),
   seriesEnPeril: () => appel('GET', '/series/peril'),
 
   entrerEnVoixSalon: (salon) => appel('POST', '/voix/salon/entrer', { corps: { salon } }),

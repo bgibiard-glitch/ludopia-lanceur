@@ -762,6 +762,9 @@ function brancherIpc() {
   ipcMain.handle('ev:participer', (_e, id, venir) => social.participerEvenement(id, venir));
   ipcMain.handle('ev:annuler', (_e, id) => social.annulerEvenement(id));
   ipcMain.handle('ev:miens', () => social.mesEvenements());
+  ipcMain.handle('sond:creer', (_e, d) => social.creerSondage(d));
+  ipcMain.handle('sond:liste', (_e, salon) => social.sondages(salon));
+  ipcMain.handle('sond:voter', (_e, id, choix) => social.voterSondage(id, choix));
 
   ipcMain.handle('srv:liste', () => social.mesServeurs());
   ipcMain.handle('srv:creer', (_e, d) => social.creerServeur(d));

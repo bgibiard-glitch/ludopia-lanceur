@@ -137,6 +137,12 @@ contextBridge.exposeInMainWorld('ludopia', {
     surnom: (id, surnom) => ipcRenderer.invoke('srv:surnom', id, surnom),
   },
 
+  sondages: {
+    creer: (d) => ipcRenderer.invoke('sond:creer', d),
+    liste: (salon) => ipcRenderer.invoke('sond:liste', salon),
+    voter: (id, choix) => ipcRenderer.invoke('sond:voter', id, choix),
+  },
+
   evenements: {
     liste: (serveur) => ipcRenderer.invoke('ev:liste', serveur),
     creer: (d) => ipcRenderer.invoke('ev:creer', d),
