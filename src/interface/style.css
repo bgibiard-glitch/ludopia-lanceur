@@ -3093,3 +3093,150 @@ body.dans-serveur .scene {
   border-color: color-mix(in srgb, var(--rouge) 40%, transparent);
   background: color-mix(in srgb, var(--rouge) 7%, transparent);
 }
+
+
+/* ============================================================
+   LES REPONSES CITEES
+   ============================================================ */
+.srv-cite {
+  display: block;
+  max-width: 100%;
+  margin: 0 0 0.15rem;
+  padding: 0.15rem 0.55rem;
+  font: inherit;
+  font-size: 0.78rem;
+  color: var(--muted);
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  background: var(--surface);
+  border: 0;
+  border-left: 2px solid var(--line-strong);
+  border-radius: 6px;
+  cursor: pointer;
+}
+.srv-cite b { color: var(--ink-dim); margin-right: 0.3rem; }
+.srv-cite:hover { color: var(--ink); }
+
+.srv-msg { position: relative; }
+.srv-msg-repondre {
+  position: absolute;
+  top: 0;
+  right: 0;
+  display: none;
+  padding: 0.1rem 0.5rem;
+  font: inherit;
+  color: var(--muted);
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  cursor: pointer;
+}
+.srv-msg:hover .srv-msg-repondre { display: block; }
+.srv-msg-repondre:hover { color: var(--ink); }
+
+.srv-msg--vise {
+  animation: msg-vise 1.2s ease;
+  border-radius: 8px;
+}
+@keyframes msg-vise {
+  0%, 60% { background: color-mix(in srgb, var(--brand) 14%, transparent); }
+  100%    { background: transparent; }
+}
+
+.srv-reponse-a {
+  flex-basis: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.35rem 0.7rem;
+  font-size: 0.8rem;
+  color: var(--muted);
+  background: var(--surface);
+  border-left: 2px solid var(--brand);
+  border-radius: 8px;
+}
+.srv-reponse-a span {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.srv-reponse-a button {
+  font: inherit;
+  color: var(--muted);
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+}
+.srv-reponse-a button:hover { color: var(--ink); }
+
+
+/* ============================================================
+   LES RENDEZ-VOUS
+   ============================================================ */
+.ev-form {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 0.6rem;
+  max-width: 560px;
+  margin-bottom: 1.4rem;
+}
+.ev-form input {
+  padding: 0.6rem 0.8rem;
+  font: inherit;
+  color: inherit;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  color-scheme: dark;
+}
+:root[data-theme="clair"] .ev-form input { color-scheme: light; }
+.ev-form input[type="text"]:first-child { grid-column: 1 / -1; }
+.ev-retour { grid-column: 1 / -1; }
+.ev-form .jouer { justify-self: start; }
+
+.ev-liste { display: grid; gap: 0.7rem; max-width: 640px; }
+
+.ev-carte {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 0.9rem 1rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+}
+.ev-carte--annule { opacity: 0.55; }
+.ev-carte--annule .ev-titre { text-decoration: line-through; }
+
+.ev-date {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: 52px;
+  padding: 0.4rem 0;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+.ev-date b { font-family: var(--font-display); font-size: 1.3rem; line-height: 1.1; }
+.ev-date span { font-size: 0.68rem; text-transform: uppercase; color: var(--muted); }
+
+.ev-bloc { flex: 1; min-width: 0; }
+.ev-titre { font-weight: 700; }
+.ev-annule {
+  margin-left: 0.5rem;
+  padding: 0.05rem 0.5rem;
+  font-size: 0.7rem;
+  font-style: normal;
+  color: var(--rouge);
+  border: 1px solid color-mix(in srgb, var(--rouge) 40%, transparent);
+  border-radius: 999px;
+}
+.ev-sous { font-size: 0.82rem; color: var(--muted); }
+.ev-detail { margin-top: 0.25rem; font-size: 0.88rem; color: var(--ink-dim); }
+
+.ev-actions { display: grid; gap: 0.4rem; }

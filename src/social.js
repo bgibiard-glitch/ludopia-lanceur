@@ -395,7 +395,8 @@ module.exports = {
     'GET', `/salons/messages?salon=${encodeURIComponent(salon)}&depuis=${depuis}&attendre=1`,
     { delai: 32000 },
   ),
-  ecrireSalon: (salon, texte) => appel('POST', '/salons/messages', { corps: { salon, texte } }),
+  ecrireSalon: (salon, texte, repondA) =>
+    appel('POST', '/salons/messages', { corps: { salon, texte, repondA } }),
   salonLu: (salon, jusqu) => appel('POST', '/salons/lu', { corps: { salon, jusqu } }),
   inviterDansSalon: (salon, ami) => appel('POST', '/salons/inviter', { corps: { salon, ami } }),
   exclureDuSalon: (salon, membre) => appel('POST', '/salons/exclure', { corps: { salon, membre } }),
@@ -423,7 +424,8 @@ module.exports = {
     'GET', `/messages?avec=${encodeURIComponent(avec)}&depuis=${depuis}&attendre=1`,
     { delai: 32000 },
   ),
-  envoyer: (vers, texte) => appel('POST', '/messages', { corps: { vers, texte } }),
+  envoyer: (vers, texte, repondA) =>
+    appel('POST', '/messages', { corps: { vers, texte, repondA } }),
   marquerLus: (avec) => appel('POST', '/messages/lus', { corps: { avec } }),
 
   /* Le mode audio. Le service n'aiguille que la négociation : la voix va d'une
@@ -478,6 +480,13 @@ module.exports = {
     appel('POST', '/bourse/offrir', { corps: { vers, montant, mot } }),
 
   mesSeries: () => appel('GET', '/series'),
+  evenements: (serveur) => appel('GET', `/evenements?serveur=${encodeURIComponent(serveur)}`),
+  creerEvenement: (d) => appel('POST', '/evenements', { corps: d }),
+  participerEvenement: (evenement, venir) =>
+    appel('POST', '/evenements/participer', { corps: { evenement, venir } }),
+  annulerEvenement: (evenement) =>
+    appel('POST', '/evenements/annuler', { corps: { evenement } }),
+  mesEvenements: () => appel('GET', '/evenements/miens'),
   seriesEnPeril: () => appel('GET', '/series/peril'),
 
   entrerEnVoixSalon: (salon) => appel('POST', '/voix/salon/entrer', { corps: { salon } }),

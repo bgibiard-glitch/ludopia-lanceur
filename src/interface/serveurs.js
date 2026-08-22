@@ -68,6 +68,20 @@ const T_SRV = {
     partager: 'Partager',
     copie: 'Lien copié.',
     ecrire: 'Votre message…',
+    repondre: 'Répondre',
+    rendezVous: 'Rendez-vous',
+    planifier: 'Planifier un rendez-vous',
+    evTitre: 'Quoi ?',
+    evQuand: 'Quand ?',
+    evDetail: 'Un mot de plus (facultatif)',
+    evCreer: 'Planifier',
+    evVide: 'Rien de prévu. Le premier rendez-vous transforme un salon en communauté.',
+    jyVais: 'J’y vais',
+    jyVaisPlus: 'Me désinscrire',
+    participants: (n) => `${n} inscrit${n > 1 ? 's' : ''}`,
+    annuleEv: 'Annulé',
+    annulerEv: 'Annuler',
+    organisePar: (qui) => `par ${qui}`,
     lectureSeule: 'Salon en lecture seule.',
     entrerVocal: 'Rejoindre',
     sortirVocal: 'Quitter le vocal',
@@ -135,6 +149,20 @@ const T_SRV = {
     partager: 'Share',
     copie: 'Link copied.',
     ecrire: 'Your message…',
+    repondre: 'Reply',
+    rendezVous: 'Events',
+    planifier: 'Plan an event',
+    evTitre: 'What?',
+    evQuand: 'When?',
+    evDetail: 'One more word (optional)',
+    evCreer: 'Plan',
+    evVide: 'Nothing planned. The first event turns a channel into a community.',
+    jyVais: 'I’m in',
+    jyVaisPlus: 'Withdraw',
+    participants: (n) => `${n} signed up`,
+    annuleEv: 'Cancelled',
+    annulerEv: 'Cancel',
+    organisePar: (qui) => `by ${qui}`,
     lectureSeule: 'Read-only channel.',
     entrerVocal: 'Join',
     sortirVocal: 'Leave voice',
@@ -212,6 +240,7 @@ const srv = {
   annuaire: null,
   vue: null,           // null | 'annuaire' | 'creation' | 'reglages' | 'roles'
   sequence: 0,         // garde contre une réponse tardive qui écraserait la suite
+  reponseA: null,      // le message que la saisie citera, ou null
 };
 
 // =============================================================================
@@ -280,6 +309,7 @@ async function chargerSalonServeur(salon) {
   srv.sequence = jeton;
   srv.salon = salon;
   srv.messages = [];
+  srv.reponseA = null;
   dessinerServeur();
 
   const r = await window.ludopia.social.messagesSalon(salon, 0);
@@ -386,9 +416,9 @@ function dessinerServeur() {
 
   const scene = $('#scene');
   scene.textContent = '';
-  document.body.classList.add('dans-serveur');
 
   if (srv.vue === 'annuaire') { dessinerAnnuaire(scene); return; }
+  if (srv.vue === 'evenements') { dessinerEvenements(scene); return; }
   if (srv.vue === 'creation') { dessinerCreation(scene); return; }
   if (srv.vue === 'roles') { dessinerRoles(scene); return; }
   if (srv.vue === 'reglages') { dessinerReglagesServeur(scene); return; }
@@ -408,7 +438,16 @@ function dessinerServeur() {
   dessinerSalonTexte(scene, salon);
 }
 
-/** La colonne des salons, à la place de la bibliothèque. */
+/**
+ * La colonne des salons, à la place de la bibliothèque.
+ *
+ * C'est elle qui décide de l'agencement, et elle doit être appelée à CHAQUE
+ * changement de vue — pas seulement en entrant dans un serveur. Le bogue
+ * d'origine : on visitait un serveur, puis on cliquait un ancien salon de
+ * groupe ; la vue changeait mais cette fonction n'était jamais rappelée, la
+ * bibliothèque restait cachée, la colonne des salons restait là, vide, et
+ * l'écran paraissait blanc. `dessinerRail()` l'appelle désormais en premier.
+ */
 function dessinerRailServeur() {
   const rail = document.querySelector('.rail');
   if (!rail) return;
@@ -421,10 +460,19 @@ function dessinerRailServeur() {
     rail.parentNode.insertBefore(panneau, rail);
   }
 
-  const dedans = etat.vue === 'serveur';
+  /* La colonne n'existe que dans un serveur OUVERT. L'annuaire et la création
+     appartiennent à la vue serveur mais n'ont pas de salons : y afficher une
+     colonne vide avec « … » faisait précisément l'écran cassé du rapport. */
+  const dedans = etat.vue === 'serveur' && Boolean(srv.ouvert);
   panneau.hidden = !dedans;
   rail.hidden = dedans;
-  if (!dedans) return;
+  document.body.classList.toggle('dans-serveur', dedans);
+  if (!dedans) {
+    // La liste des membres suit : elle n'a pas de sens hors d'un serveur.
+    const membres = document.getElementById('membres');
+    if (membres) membres.hidden = true;
+    return;
+  }
 
   panneau.textContent = '';
   const s = srv.contenu?.serveur;
@@ -487,6 +535,21 @@ function dessinerRailServeur() {
       panneau.append(ligneSalon(c));
     }
   }
+
+  // --- les rendez-vous ---
+  const rdv = document.createElement('button');
+  rdv.type = 'button';
+  rdv.className = 'srv-salon';
+  rdv.setAttribute('aria-current', String(srv.vue === 'evenements'));
+  const rdvIcone = document.createElement('span');
+  rdvIcone.className = 'srv-salon-icone';
+  rdvIcone.textContent = '🗓';
+  const rdvNom = document.createElement('span');
+  rdvNom.className = 'srv-salon-nom';
+  rdvNom.textContent = t.rendezVous;
+  rdv.append(rdvIcone, rdvNom);
+  rdv.addEventListener('click', ouvrirEvenements);
+  panneau.append(rdv);
 
   // --- ajouter un salon ---
   if (peutIci('gererSalons')) {
@@ -559,7 +622,6 @@ function fermerServeur() {
   srv.salon = null;
   srv.vue = null;
   etat.vue = 'accueil';
-  document.body.classList.remove('dans-serveur');
   dessinerRailServeur();
   dessinerAccueil();
   dessinerChats();
@@ -659,6 +721,20 @@ function dessinerSalonTexte(scene, salon) {
   const form = document.createElement('form');
   form.className = 'srv-ecrire';
 
+  if (srv.reponseA) {
+    const bandeau = document.createElement('div');
+    bandeau.className = 'srv-reponse-a';
+    const texte = document.createElement('span');
+    texte.textContent = `↩ ${srv.reponseA.pseudo} — ${srv.reponseA.texte.slice(0, 70)}`;
+    bandeau.append(texte);
+    const annuler = document.createElement('button');
+    annuler.type = 'button';
+    annuler.textContent = '✕';
+    annuler.addEventListener('click', () => { srv.reponseA = null; dessinerServeur(); });
+    bandeau.append(annuler);
+    form.append(bandeau);
+  }
+
   const champ = document.createElement('input');
   champ.type = 'text';
   champ.placeholder = t.ecrire;
@@ -697,7 +773,9 @@ function dessinerSalonTexte(scene, salon) {
     champ.value = '';
     retour.textContent = '';
 
-    const r = await window.ludopia.social.ecrireSalon(salon.id, texte);
+    const citation = srv.reponseA?.id ?? null;
+    srv.reponseA = null;
+    const r = await window.ludopia.social.ecrireSalon(salon.id, texte, citation);
     if (!r.ok) {
       if (r.erreur === 'mode_lent') {
         let d = {};
@@ -720,6 +798,30 @@ function dessinerSalonTexte(scene, salon) {
 function messageSalon(m, groupe) {
   const el = document.createElement('div');
   el.className = groupe ? 'srv-msg srv-msg--suite' : 'srv-msg';
+
+  /* La citation d'abord : elle se lit avant la réponse, comme dans un
+     courrier. Si l'original a été purgé, la jointure rend null et l'on
+     affiche un creux honnête plutôt que rien. */
+  if (m.repond_a) {
+    const cite = document.createElement('button');
+    cite.type = 'button';
+    cite.className = 'srv-cite';
+    const de = document.createElement('b');
+    de.textContent = m.cite_pseudo || '…';
+    cite.append(de, document.createTextNode(
+      ` ${m.cite_texte ? m.cite_texte.slice(0, 90) : '(message effacé)'}`));
+    cite.addEventListener('click', () => {
+      // Cliquer la citation fait clignoter l'original s'il est à l'écran.
+      const original = document.querySelector(`[data-msg="${m.repond_a}"]`);
+      if (original) {
+        original.scrollIntoView({ block: 'center' });
+        original.classList.add('srv-msg--vise');
+        setTimeout(() => original.classList.remove('srv-msg--vise'), 1200);
+      }
+    });
+    el.append(cite);
+  }
+  el.dataset.msg = m.id;
 
   if (!groupe) {
     const tete = document.createElement('p');
@@ -747,6 +849,18 @@ function messageSalon(m, groupe) {
   texte.className = 'srv-msg-texte';
   texte.textContent = m.texte;
   el.append(texte);
+
+  const repondre = document.createElement('button');
+  repondre.type = 'button';
+  repondre.className = 'srv-msg-repondre';
+  repondre.textContent = '↩';
+  repondre.title = TS().repondre;
+  repondre.addEventListener('click', () => {
+    srv.reponseA = { id: m.id, pseudo: m.pseudo, texte: m.texte };
+    dessinerServeur();
+    document.querySelector('.srv-ecrire input')?.focus();
+  });
+  el.append(repondre);
 
   return el;
 }
@@ -1541,6 +1655,173 @@ function carteRole(role, catalogue, noms) {
   });
   barre.append(suppr);
   carte.append(barre);
+
+  return carte;
+}
+
+// =============================================================================
+// Les rendez-vous
+// =============================================================================
+
+async function ouvrirEvenements() {
+  srv.vue = 'evenements';
+  srv.evenements = null;
+  dessinerServeur();
+  const r = await window.ludopia.evenements.liste(srv.ouvert);
+  if (srv.vue !== 'evenements') return;
+  srv.evenements = r.ok ? (r.donnees.evenements || []) : [];
+  dessinerServeur();
+}
+
+function dessinerEvenements(scene) {
+  const t = TS();
+
+  const tete = document.createElement('section');
+  tete.className = 'acc-tete';
+  const h1 = document.createElement('h1');
+  h1.textContent = `🗓 ${t.rendezVous}`;
+  tete.append(h1);
+  scene.append(tete);
+
+  // --- planifier, pour qui a le droit d'annoncer ---
+  if (peutIci('ecrireAnnonces')) {
+    const form = document.createElement('form');
+    form.className = 'ev-form';
+
+    const titre = document.createElement('input');
+    titre.type = 'text';
+    titre.placeholder = t.evTitre;
+    titre.maxLength = 80;
+    form.append(titre);
+
+    const quand = document.createElement('input');
+    quand.type = 'datetime-local';
+    quand.setAttribute('aria-label', t.evQuand);
+    /* Une valeur de départ raisonnable : demain, vingt heures. Un champ de
+       date vide fait perdre dix secondes à tout le monde. */
+    const demain = new Date(Date.now() + 86400000);
+    demain.setHours(20, 0, 0, 0);
+    quand.value = new Date(demain.getTime() - demain.getTimezoneOffset() * 60000)
+      .toISOString().slice(0, 16);
+    form.append(quand);
+
+    const detail = document.createElement('input');
+    detail.type = 'text';
+    detail.placeholder = t.evDetail;
+    detail.maxLength = 400;
+    form.append(detail);
+
+    const retour = document.createElement('div');
+    retour.className = 'ev-retour';
+    form.append(retour);
+
+    const ok = document.createElement('button');
+    ok.type = 'submit';
+    ok.className = 'jouer jouer--mini';
+    ok.textContent = t.evCreer;
+    form.append(ok);
+
+    form.addEventListener('submit', async (evt) => {
+      evt.preventDefault();
+      retour.textContent = '';
+      const r = await window.ludopia.evenements.creer({
+        serveur: srv.ouvert,
+        titre: titre.value,
+        detail: detail.value,
+        jeu: srv.contenu?.serveur?.jeu || null,
+        quand: Math.floor(new Date(quand.value).getTime() / 1000),
+      });
+      if (!r.ok) { retour.append(bulle(messageErreur(r.erreur, r.detail))); return; }
+      ouvrirEvenements();
+    });
+    scene.append(form);
+  }
+
+  // --- la liste ---
+  const liste = document.createElement('div');
+  liste.className = 'ev-liste';
+  if (srv.evenements === null) {
+    liste.append(bulle('…', 'calme'));
+  } else if (!srv.evenements.length) {
+    liste.append(bulle(t.evVide, 'calme'));
+  } else {
+    for (const e of srv.evenements) liste.append(carteEvenement(e));
+  }
+  scene.append(liste);
+  scene.scrollTop = 0;
+}
+
+function carteEvenement(e) {
+  const t = TS();
+  const carte = document.createElement('article');
+  carte.className = e.annule ? 'ev-carte ev-carte--annule' : 'ev-carte';
+
+  const date = new Date(e.quand * 1000);
+  const cal = document.createElement('div');
+  cal.className = 'ev-date';
+  const jour = document.createElement('b');
+  jour.textContent = String(date.getDate());
+  const mois = document.createElement('span');
+  mois.textContent = date.toLocaleDateString(etat.langue === 'fr' ? 'fr-FR' : 'en-GB',
+    { month: 'short' });
+  cal.append(jour, mois);
+  carte.append(cal);
+
+  const bloc = document.createElement('div');
+  bloc.className = 'ev-bloc';
+  const titre = document.createElement('p');
+  titre.className = 'ev-titre';
+  titre.textContent = e.titre;
+  if (e.annule) {
+    const badge = document.createElement('i');
+    badge.className = 'ev-annule';
+    badge.textContent = t.annuleEv;
+    titre.append(badge);
+  }
+  bloc.append(titre);
+
+  const sous = document.createElement('p');
+  sous.className = 'ev-sous';
+  sous.textContent = `${date.toLocaleString(etat.langue === 'fr' ? 'fr-FR' : 'en-GB',
+    { weekday: 'long', hour: '2-digit', minute: '2-digit' })} · ${t.participants(e.participants)}`
+    + ` · ${t.organisePar(e.organisateur)}`;
+  bloc.append(sous);
+
+  if (e.detail) {
+    const d = document.createElement('p');
+    d.className = 'ev-detail';
+    d.textContent = e.detail;
+    bloc.append(d);
+  }
+  carte.append(bloc);
+
+  if (!e.annule) {
+    const actions = document.createElement('div');
+    actions.className = 'ev-actions';
+
+    const venir = document.createElement('button');
+    venir.type = 'button';
+    venir.className = e.jyVais ? 'btn-mini' : 'jouer jouer--mini';
+    venir.textContent = e.jyVais ? t.jyVaisPlus : t.jyVais;
+    venir.addEventListener('click', async () => {
+      const r = await window.ludopia.evenements.participer(e.id, !e.jyVais);
+      if (r.ok) ouvrirEvenements();
+    });
+    actions.append(venir);
+
+    if (e.cree_par === etat.social.moi?.id || peutIci('ecrireAnnonces')) {
+      const annuler = document.createElement('button');
+      annuler.type = 'button';
+      annuler.className = 'btn-mini btn-mini--danger';
+      annuler.textContent = t.annulerEv;
+      annuler.addEventListener('click', async () => {
+        const r = await window.ludopia.evenements.annuler(e.id);
+        if (r.ok) ouvrirEvenements();
+      });
+      actions.append(annuler);
+    }
+    carte.append(actions);
+  }
 
   return carte;
 }

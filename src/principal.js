@@ -681,7 +681,8 @@ function brancherIpc() {
     social.messagesSalon(salon, depuis));
   ipcMain.handle('social:attendreSalon', (_e, salon, depuis) =>
     social.attendreSalon(salon, depuis));
-  ipcMain.handle('social:ecrireSalon', (_e, salon, texte) => social.ecrireSalon(salon, texte));
+  ipcMain.handle('social:ecrireSalon',
+    (_e, salon, texte, repondA) => social.ecrireSalon(salon, texte, repondA));
   ipcMain.handle('social:salonLu', (_e, salon, jusqu) => social.salonLu(salon, jusqu));
   ipcMain.handle('social:inviterDansSalon', (_e, salon, ami) =>
     social.inviterDansSalon(salon, ami));
@@ -701,7 +702,8 @@ function brancherIpc() {
   ipcMain.handle('social:messages', (_e, avec, depuis) => social.messages(avec, depuis));
   ipcMain.handle('social:attendreMessages', (_e, avec, depuis) =>
     social.attendreMessages(avec, depuis));
-  ipcMain.handle('social:envoyer', (_e, vers, texte) => social.envoyer(vers, texte));
+  ipcMain.handle('social:envoyer',
+    (_e, vers, texte, repondA) => social.envoyer(vers, texte, repondA));
 
   // --- le mode audio ---
   ipcMain.handle('theme:etat', () => ({
@@ -745,6 +747,12 @@ function brancherIpc() {
      jeton. */
   ipcMain.handle('social:modifierProfil', (_e, d) => social.modifierProfil(d));
   ipcMain.handle('social:passeport', (_e, d) => social.definirPasseport(d));
+  ipcMain.handle('ev:liste', (_e, serveur) => social.evenements(serveur));
+  ipcMain.handle('ev:creer', (_e, d) => social.creerEvenement(d));
+  ipcMain.handle('ev:participer', (_e, id, venir) => social.participerEvenement(id, venir));
+  ipcMain.handle('ev:annuler', (_e, id) => social.annulerEvenement(id));
+  ipcMain.handle('ev:miens', () => social.mesEvenements());
+
   ipcMain.handle('srv:liste', () => social.mesServeurs());
   ipcMain.handle('srv:creer', (_e, d) => social.creerServeur(d));
   ipcMain.handle('srv:rejoindre', (_e, d) => social.rejoindreServeur(d));

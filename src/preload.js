@@ -57,7 +57,8 @@ contextBridge.exposeInMainWorld('ludopia', {
     membresSalon: (salon) => ipcRenderer.invoke('social:membresSalon', salon),
     messagesSalon: (salon, depuis) => ipcRenderer.invoke('social:messagesSalon', salon, depuis),
     attendreSalon: (salon, depuis) => ipcRenderer.invoke('social:attendreSalon', salon, depuis),
-    ecrireSalon: (salon, texte) => ipcRenderer.invoke('social:ecrireSalon', salon, texte),
+    ecrireSalon: (salon, texte, repondA) =>
+      ipcRenderer.invoke('social:ecrireSalon', salon, texte, repondA),
     salonLu: (salon, jusqu) => ipcRenderer.invoke('social:salonLu', salon, jusqu),
     inviterDansSalon: (salon, ami) =>
       ipcRenderer.invoke('social:inviterDansSalon', salon, ami),
@@ -76,7 +77,8 @@ contextBridge.exposeInMainWorld('ludopia', {
     messages: (avec, depuis) => ipcRenderer.invoke('social:messages', avec, depuis),
     attendreMessages: (avec, depuis) =>
       ipcRenderer.invoke('social:attendreMessages', avec, depuis),
-    envoyer: (vers, texte) => ipcRenderer.invoke('social:envoyer', vers, texte),
+    envoyer: (vers, texte, repondA) =>
+      ipcRenderer.invoke('social:envoyer', vers, texte, repondA),
     marquerLus: (avec) => ipcRenderer.invoke('social:marquerLus', avec),
 
     surChangement: (rappel) => {
@@ -133,6 +135,14 @@ contextBridge.exposeInMainWorld('ludopia', {
     attribuerRole: (role, compte, retirer) =>
       ipcRenderer.invoke('srv:attribuerRole', role, compte, retirer),
     surnom: (id, surnom) => ipcRenderer.invoke('srv:surnom', id, surnom),
+  },
+
+  evenements: {
+    liste: (serveur) => ipcRenderer.invoke('ev:liste', serveur),
+    creer: (d) => ipcRenderer.invoke('ev:creer', d),
+    participer: (id, venir) => ipcRenderer.invoke('ev:participer', id, venir),
+    annuler: (id) => ipcRenderer.invoke('ev:annuler', id),
+    miens: () => ipcRenderer.invoke('ev:miens'),
   },
 
   boutique: {

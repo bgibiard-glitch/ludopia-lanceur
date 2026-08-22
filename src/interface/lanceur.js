@@ -133,6 +133,7 @@ const TEXTES = {
     editerProfil: 'Personnaliser',
     offrirLudos: 'Offrir des Ludos',
     aujourdhui: 'Aujourd’hui',
+    rdvBientot: (titre, ou, quand) => `🗓 ${titre} · ${ou} — ${quand}`,
     bonusAPrendre: 'Votre bonus du jour vous attend',
     bonusPrendre: 'Le prendre',
     bonusRecu: (n) => `+${n} Ⱡ — à demain !`,
@@ -359,6 +360,7 @@ const TEXTES = {
     editerProfil: 'Customise',
     offrirLudos: 'Gift Ludos',
     aujourdhui: 'Today',
+    rdvBientot: (titre, ou, quand) => `🗓 ${titre} · ${ou} — ${quand}`,
     bonusAPrendre: 'Your daily bonus is waiting',
     bonusPrendre: 'Claim it',
     bonusRecu: (n) => `+${n} Ⱡ — see you tomorrow!`,
@@ -543,6 +545,12 @@ function libelleEtat(cle) {
 // =============================================================================
 
 function dessinerRail() {
+  /* L'agencement d'abord : entrer ou sortir du mode serveur remet la
+     bibliothèque et la colonne des salons dans le bon état, quelle que soit
+     la vue qui appelle. Sans cet appel, revenir d'un serveur laissait la
+     bibliothèque cachée — des écrans entiers paraissaient blancs. */
+  if (typeof dessinerRailServeur === 'function') dessinerRailServeur();
+
   const rail = $('#rail');
   rail.textContent = '';
   const filtre = etat.recherche.trim().toLowerCase();
@@ -992,8 +1000,6 @@ function dessinerSalon() {
   const nom = document.createElement('p');
   nom.className = 'conv-nom';
   nom.textContent = salon.nom;
-  const flamme = pastilleSerie(ami.serie);
-  if (flamme) nom.append(flamme);
 
   const sous = document.createElement('p');
   sous.className = 'ami-etat';
@@ -1374,11 +1380,28 @@ function dessinerProfil() {
 async function remplirAujourdhui(lignes, zone) {
   const t = T();
 
-  const [bourse, amis] = await Promise.all([
+  const [bourse, amis, rdv] = await Promise.all([
     window.ludopia.bourse.lire(),
     window.ludopia.social.amis(),
+    window.ludopia.evenements.miens(),
   ]);
   if (etat.vue !== 'accueil') return;
+
+  // --- mes prochains rendez-vous, ceux des prochaines 48 h ---
+  if (rdv.ok) {
+    const bientot = (rdv.donnees.evenements || [])
+      .filter((e) => e.quand - rdv.donnees.heure < 48 * 3600).slice(0, 2);
+    for (const e of bientot) {
+      const ligne = document.createElement('div');
+      ligne.className = 'jour-ligne';
+      const texte = document.createElement('p');
+      texte.textContent = t.rdvBientot(e.titre, e.serveur,
+        new Date(e.quand * 1000).toLocaleString(etat.langue === 'fr' ? 'fr-FR' : 'en-GB',
+          { weekday: 'short', hour: '2-digit', minute: '2-digit' }));
+      ligne.append(texte);
+      lignes.append(ligne);
+    }
+  }
 
   // --- le bonus ---
   if (bourse.ok && bourse.donnees.bonusDisponible) {
