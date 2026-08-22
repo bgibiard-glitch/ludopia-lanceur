@@ -666,6 +666,20 @@ function dessinerSalonTexte(scene, salon) {
   champ.autocomplete = 'off';
   form.append(champ);
 
+  // Le même sélecteur d'emojis que partout ailleurs : il vit dans lanceur.js.
+  const bEmoji = document.createElement('button');
+  bEmoji.type = 'button';
+  bEmoji.className = 'btn-mini';
+  bEmoji.dataset.ouvreEmojis = '1';
+  bEmoji.textContent = '😀';
+  bEmoji.addEventListener('click', () => {
+    ouvrirSelecteurEmojis(bEmoji, (e) => {
+      champ.value += e;
+      champ.focus();
+    });
+  });
+  form.append(bEmoji);
+
   const envoyer = document.createElement('button');
   envoyer.type = 'submit';
   envoyer.className = 'jouer';

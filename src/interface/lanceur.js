@@ -2579,6 +2579,8 @@ function dessinerConversation(scene) {
   saisie.type = 'text';
   saisie.placeholder = t.votreMessage;
   saisie.maxLength = 1000;
+
+
   const envoyer = document.createElement('button');
   envoyer.type = 'submit';
   envoyer.className = 'btn-mini btn-mini--fort';
