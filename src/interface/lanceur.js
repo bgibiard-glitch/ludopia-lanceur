@@ -182,7 +182,11 @@ const TEXTES = {
       trop_d_appels: 'Trop d’essais. Patientez quelques minutes.',
       courriel_invalide: 'Cette adresse e-mail n’a pas l’air valide.',
       courriel_pris: 'Un compte utilise déjà cette adresse.',
+      compte_suspendu: 'Ce compte est suspendu.',
     },
+    suspenduJusqu: (quand) => `Ce compte est suspendu jusqu’au ${quand}.`,
+    suspenduSansTerme: 'Ce compte est suspendu.',
+    suspenduMotif: (motif) => `Motif : ${motif}`,
   },
   en: {
     bibliotheque: 'Library',
@@ -1453,9 +1457,32 @@ const ICONE_AMIS =
   + '<circle cx="10" cy="8" r="3.5" /><path d="M20 20v-1.5a3.5 3.5 0 0 0-2.6-3.4" />'
   + '<path d="M15.5 4.6a3.5 3.5 0 0 1 0 6.8" /></svg>';
 
+/**
+ * Une suspension se dit en toutes lettres.
+ *
+ * Le service renvoie le motif et le terme dans le détail. Sans cela, quelqu'un
+ * de suspendu verrait « pseudo ou mot de passe incorrect » et passerait une
+ * soirée à réessayer son mot de passe — puis écrirait pour signaler une panne
+ * qui n'en est pas une.
+ */
+function messageSuspension(detail) {
+  const t = T();
+  let d = {};
+  try { d = JSON.parse(detail || '{}'); } catch { /* détail illisible */ }
+
+  const quand = d.jusqu
+    ? new Date(d.jusqu * 1000).toLocaleString(etat.langue === 'fr' ? 'fr-FR' : 'en-GB',
+      { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+    : null;
+
+  const tete = quand ? t.suspenduJusqu(quand) : t.suspenduSansTerme;
+  return d.motif ? `${tete} ${t.suspenduMotif(d.motif)}` : tete;
+}
+
 /** Traduit un code d'erreur du service ; à défaut, on montre le code brut
  *  plutôt qu'un « une erreur est survenue » qui n'aide personne. */
 function messageErreur(code, detail) {
+  if (code === 'compte_suspendu') return messageSuspension(detail);
   return T().erreurs[code] || detail || code || T().horsService;
 }
 
