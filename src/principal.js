@@ -659,6 +659,45 @@ function brancherIpc() {
     appliquerTheme();
   });
 
+  /* Les serveurs et tout ce qui les entoure. Un relais direct : la logique
+     vit côté service, et l'interface parle au processus principal qui tient le
+     jeton. */
+  ipcMain.handle('srv:liste', () => social.mesServeurs());
+  ipcMain.handle('srv:creer', (_e, d) => social.creerServeur(d));
+  ipcMain.handle('srv:rejoindre', (_e, d) => social.rejoindreServeur(d));
+  ipcMain.handle('srv:quitter', (_e, id) => social.quitterServeur(id));
+  ipcMain.handle('srv:modifier', (_e, d) => social.modifierServeur(d));
+  ipcMain.handle('srv:contenu', (_e, id) => social.contenuServeur(id));
+  ipcMain.handle('srv:membres', (_e, id) => social.membresServeur(id));
+  ipcMain.handle('srv:exclure', (_e, id, compte) => social.exclureDuServeur(id, compte));
+  ipcMain.handle('srv:ajouterSalon', (_e, d) => social.ajouterSalonServeur(d));
+  ipcMain.handle('srv:supprimerSalon', (_e, salon) => social.supprimerSalonServeur(salon));
+  ipcMain.handle('srv:annuaire', (_e, filtres) => social.annuaireServeurs(filtres));
+  ipcMain.handle('srv:roles', (_e, id) => social.roles(id));
+  ipcMain.handle('srv:creerRole', (_e, d) => social.creerRole(d));
+  ipcMain.handle('srv:modifierRole', (_e, d) => social.modifierRole(d));
+  ipcMain.handle('srv:supprimerRole', (_e, role) => social.supprimerRole(role));
+  ipcMain.handle('srv:attribuerRole', (_e, role, compte, retirer) =>
+    social.attribuerRole(role, compte, retirer));
+  ipcMain.handle('srv:surnom', (_e, id, surnom) => social.definirSurnom(id, surnom));
+
+  ipcMain.handle('boutique:lire', (_e, langue) => social.boutique(langue));
+  ipcMain.handle('boutique:acheter', (_e, article) => social.acheterArticle(article));
+  ipcMain.handle('boutique:equiper', (_e, emplacement, article) =>
+    social.equiperArticle(emplacement, article));
+
+  ipcMain.handle('bourse:lire', () => social.bourse());
+  ipcMain.handle('bourse:bonus', () => social.bonusQuotidien());
+  ipcMain.handle('bourse:offrir', (_e, vers, montant, mot) =>
+    social.offrirLudos(vers, montant, mot));
+
+  ipcMain.handle('voix:salonEntrer', (_e, salon) => social.entrerEnVoixSalon(salon));
+  ipcMain.handle('voix:salonBattement', (_e, salon, muet) =>
+    social.battementVoixSalon(salon, muet));
+  ipcMain.handle('voix:salonSortir', (_e, salon) => social.sortirDeVoixSalon(salon));
+  ipcMain.handle('voix:salonSignal', (_e, salon, vers, sorte, charge) =>
+    social.signalVoixSalon(salon, vers, sorte, charge));
+
   ipcMain.handle('voix:glace', () => social.glace());
   ipcMain.handle('voix:appeler', (_e, vers) => social.appelerVoix(vers));
   ipcMain.handle('voix:repondre', (_e, id, accepte) => social.repondreVoix(id, accepte));

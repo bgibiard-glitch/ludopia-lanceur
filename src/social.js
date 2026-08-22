@@ -436,6 +436,54 @@ module.exports = {
     appel('POST', '/voix/signal', { corps: { appel: appelId, sorte, charge } }),
   etatVoix: (appelId) => appel('GET', `/voix/etat?appel=${encodeURIComponent(appelId)}`),
 
+  // --- serveurs, rôles, boutique, bourse, séries ---
+  mesServeurs: () => appel('GET', '/serveurs'),
+  creerServeur: (d) => appel('POST', '/serveurs', { corps: d }),
+  rejoindreServeur: (d) => appel('POST', '/serveurs/rejoindre', { corps: d }),
+  quitterServeur: (serveur) => appel('POST', '/serveurs/quitter', { corps: { serveur } }),
+  modifierServeur: (d) => appel('POST', '/serveurs/modifier', { corps: d }),
+  contenuServeur: (serveur) => appel(
+    'GET', `/serveurs/contenu?serveur=${encodeURIComponent(serveur)}`,
+  ),
+  membresServeur: (serveur) => appel(
+    'GET', `/serveurs/membres?serveur=${encodeURIComponent(serveur)}`,
+  ),
+  exclureDuServeur: (serveur, compte) =>
+    appel('POST', '/serveurs/exclure', { corps: { serveur, compte } }),
+  ajouterSalonServeur: (d) => appel('POST', '/serveurs/salons', { corps: d }),
+  supprimerSalonServeur: (salon) =>
+    appel('POST', '/serveurs/salons/supprimer', { corps: { salon } }),
+  annuaireServeurs: (filtres = '') => appel(
+    'GET', `/serveurs/publics${filtres ? `?${filtres}` : ''}`, { avecJeton: false },
+  ),
+
+  roles: (serveur) => appel('GET', `/roles?serveur=${encodeURIComponent(serveur)}`),
+  creerRole: (d) => appel('POST', '/roles', { corps: d }),
+  modifierRole: (d) => appel('POST', '/roles/modifier', { corps: d }),
+  supprimerRole: (role) => appel('POST', '/roles/supprimer', { corps: { role } }),
+  attribuerRole: (role, compte, retirer) =>
+    appel('POST', '/roles/attribuer', { corps: { role, compte, retirer } }),
+  definirSurnom: (serveur, surnom) => appel('POST', '/surnom', { corps: { serveur, surnom } }),
+
+  boutique: (langue) => appel('GET', `/boutique?langue=${langue || 'fr'}`),
+  acheterArticle: (article) => appel('POST', '/boutique/acheter', { corps: { article } }),
+  equiperArticle: (emplacement, article) =>
+    appel('POST', '/boutique/equiper', { corps: { emplacement, article } }),
+
+  bourse: () => appel('GET', '/bourse'),
+  bonusQuotidien: () => appel('POST', '/bourse/bonus'),
+  offrirLudos: (vers, montant, mot) =>
+    appel('POST', '/bourse/offrir', { corps: { vers, montant, mot } }),
+
+  mesSeries: () => appel('GET', '/series'),
+
+  entrerEnVoixSalon: (salon) => appel('POST', '/voix/salon/entrer', { corps: { salon } }),
+  battementVoixSalon: (salon, muet) =>
+    appel('POST', '/voix/salon/battement', { corps: { salon, muet } }),
+  sortirDeVoixSalon: (salon) => appel('POST', '/voix/salon/sortir', { corps: { salon } }),
+  signalVoixSalon: (salon, vers, sorte, charge) =>
+    appel('POST', '/voix/salon/signal', { corps: { salon, vers, sorte, charge } }),
+
   actualites: () => appel('GET', '/actualites', { avecJeton: false }),
   classement: () => appel('GET', '/classement', { avecJeton: false }),
 };

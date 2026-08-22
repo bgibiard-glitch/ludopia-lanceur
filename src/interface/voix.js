@@ -356,6 +356,13 @@ function arreterSonnerie() {
 
 async function recevoirSignaux(signaux) {
   for (const x of signaux) {
+    // Les signaux de salon vocal portent un identifiant `salon:<id>` : ils ont
+    // leur propre mécanique, en maillage, et rien à faire dans celle des
+    // appels à deux.
+    if (typeof x.appel === 'string' && x.appel.startsWith('salon:')) {
+      await recevoirSignalSalle(x);
+      continue;
+    }
     if (x.sorte === 'sonne') {
       // Déjà en ligne : on refuse poliment plutôt que de laisser sonner une
       // ligne occupée. Le service le sait aussi, mais deux appels peuvent
@@ -540,4 +547,195 @@ function brancherVoix() {
 /** Vrai si un appel est en cours avec cette personne : le bouton s'efface. */
 function enAppelAvec(id) {
   return Boolean(appel && appel.avec === id);
+}
+
+// =============================================================================
+// Le salon vocal : plusieurs personnes, une liaison par paire
+// =============================================================================
+
+/**
+ * Le vocal de groupe est un maillage : chacun tient une liaison directe avec
+ * chacun des autres. À six personnes, cinq flux montants par participant — la
+ * limite du service — ce qui passe sur une connexion domestique.
+ *
+ * La règle qui évite le chaos : **l'arrivant appelle les présents**. Jamais
+ * l'inverse. Si chacun appelait chacun, deux offres se croiseraient pour
+ * chaque paire et la moitié des liaisons ne s'établiraient jamais — c'est le
+ * « glare », le même écueil que pour les appels à deux.
+ */
+let salle = null; // { salon, flux, pairs: Map<compte, {pc, audio, candidats}>, muet, horloge }
+
+function vocalEnCours() {
+  return salle ? salle.salon : null;
+}
+
+async function entrerDansVocal(salonId) {
+  if (salle) await sortirDuVocal();
+  if (appel) return; // pas de vocal de groupe pendant un appel privé
+
+  let flux;
+  try {
+    flux = await prendreLeMicro();
+  } catch (e) {
+    annoncer(e?.name === 'NotAllowedError' ? TV().microRefuse : TV().sansMicro);
+    return;
+  }
+
+  const r = await window.ludopia.voix.salonEntrer(salonId);
+  if (!r.ok) {
+    flux.getTracks().forEach((p) => p.stop());
+    annoncer(messageErreur(r.erreur, r.detail));
+    return;
+  }
+
+  salle = {
+    salon: salonId,
+    flux,
+    pairs: new Map(),
+    muet: false,
+    horloge: null,
+  };
+
+  // L'arrivant ouvre une liaison vers chaque présent.
+  for (const compte of r.donnees.presents || []) {
+    ouvrirLiaisonSalle(compte, true);
+  }
+
+  /* Le battement fait double office : il maintient la présence côté service,
+     et il rapporte qui est là — c'est comme cela qu'on voit partir quelqu'un
+     dont la liaison est morte sans signal. */
+  salle.horloge = setInterval(async () => {
+    if (!salle) return;
+    const b = await window.ludopia.voix.salonBattement(salle.salon, salle.muet);
+    if (!salle) return;
+    if (!b.ok) { await sortirDuVocal(); return; }
+
+    const presents = new Set((b.donnees.presents || []).map((x) => x.id));
+    // Ceux qui sont partis : on ferme leur liaison, sinon elle traîne en
+    // `disconnected` et leur silence passe pour une panne.
+    for (const [compte, pair] of salle.pairs) {
+      if (!presents.has(compte)) fermerLiaisonSalle(compte, pair);
+    }
+    if (typeof dessinerServeur === 'function') dessinerServeur();
+  }, 15000);
+
+  if (typeof dessinerServeur === 'function') dessinerServeur();
+}
+
+async function sortirDuVocal() {
+  if (!salle) return;
+  const { salon, flux, pairs, horloge } = salle;
+  salle = null;
+
+  if (horloge) clearInterval(horloge);
+  for (const [compte, pair] of pairs) fermerLiaisonSalle(compte, pair);
+  flux.getTracks().forEach((p) => p.stop());
+
+  await window.ludopia.voix.salonSortir(salon);
+  if (typeof dessinerServeur === 'function') dessinerServeur();
+}
+
+function basculerMicroSalle() {
+  if (!salle) return;
+  salle.muet = !salle.muet;
+  salle.flux.getAudioTracks().forEach((p) => { p.enabled = !salle.muet; });
+  // Le battement portera l'état aux autres au prochain passage ; on l'envoie
+  // tout de suite pour que l'icône ne mette pas quinze secondes à changer.
+  window.ludopia.voix.salonBattement(salle.salon, salle.muet);
+  if (typeof dessinerServeur === 'function') dessinerServeur();
+}
+
+/** Une liaison vers une personne de la salle. `initiateur` : c'est moi qui offre. */
+async function ouvrirLiaisonSalle(compte, initiateur) {
+  if (!salle || salle.pairs.has(compte)) return;
+
+  const r = await window.ludopia.voix.glace();
+  if (!salle) return;
+  const serveurs = r.ok ? (r.donnees.serveurs || []) : [{ urls: ['stun:stun.cloudflare.com:3478'] }];
+
+  const pc = new RTCPeerConnection({ iceServers: serveurs, bundlePolicy: 'max-bundle' });
+
+  /* Un lecteur audio par personne, invisible. Un seul élément ne suffit pas :
+     `srcObject` ne porte qu'un flux, et l'on entendrait une seule voix. */
+  const audio = document.createElement('audio');
+  audio.autoplay = true;
+  audio.dataset.salle = compte;
+  document.body.append(audio);
+
+  const pair = { pc, audio, candidats: [] };
+  salle.pairs.set(compte, pair);
+
+  salle.flux.getTracks().forEach((p) => pc.addTrack(p, salle.flux));
+
+  pc.ontrack = (evt) => {
+    if (evt.streams[0]) audio.srcObject = evt.streams[0];
+  };
+
+  pc.onicecandidate = (evt) => {
+    if (!evt.candidate || !salle) return;
+    window.ludopia.voix.salonSignal(salle.salon, compte, 'candidat',
+      JSON.stringify(evt.candidate));
+  };
+
+  pc.onconnectionstatechange = () => {
+    if (!salle) return;
+    if (['failed', 'closed'].includes(pc.connectionState)) {
+      const p = salle.pairs.get(compte);
+      if (p) fermerLiaisonSalle(compte, p);
+    }
+  };
+
+  if (initiateur) {
+    const offre = await pc.createOffer();
+    await pc.setLocalDescription(offre);
+    if (!salle) return;
+    await window.ludopia.voix.salonSignal(salle.salon, compte, 'offre', JSON.stringify(offre));
+  }
+}
+
+function fermerLiaisonSalle(compte, pair) {
+  try { pair.pc.close(); } catch { /* déjà fermée */ }
+  pair.audio.srcObject = null;
+  pair.audio.remove();
+  salle?.pairs.delete(compte);
+}
+
+/** Les signaux `salon:<id>`, aiguillés depuis recevoirSignaux. */
+async function recevoirSignalSalle(x) {
+  if (!salle) return;
+  const salonId = x.appel.slice('salon:'.length);
+  if (salonId !== salle.salon) return;
+
+  let pair = salle.pairs.get(x.de);
+
+  if (x.sorte === 'offre') {
+    // Quelqu'un vient d'arriver et m'appelle : je réponds, je n'offre pas.
+    if (!pair) {
+      await ouvrirLiaisonSalle(x.de, false);
+      pair = salle?.pairs.get(x.de);
+    }
+    if (!pair) return;
+    await pair.pc.setRemoteDescription(new RTCSessionDescription(JSON.parse(x.charge)));
+    for (const c of pair.candidats.splice(0)) {
+      try { await pair.pc.addIceCandidate(new RTCIceCandidate(JSON.parse(c))); } catch { /* tant pis */ }
+    }
+    const reponse = await pair.pc.createAnswer();
+    await pair.pc.setLocalDescription(reponse);
+    await window.ludopia.voix.salonSignal(salle.salon, x.de, 'reponse', JSON.stringify(reponse));
+    return;
+  }
+
+  if (!pair) return;
+
+  if (x.sorte === 'reponse') {
+    await pair.pc.setRemoteDescription(new RTCSessionDescription(JSON.parse(x.charge)));
+    for (const c of pair.candidats.splice(0)) {
+      try { await pair.pc.addIceCandidate(new RTCIceCandidate(JSON.parse(c))); } catch { /* tant pis */ }
+    }
+  } else if (x.sorte === 'candidat') {
+    if (!pair.pc.remoteDescription) pair.candidats.push(x.charge);
+    else {
+      try { await pair.pc.addIceCandidate(new RTCIceCandidate(JSON.parse(x.charge))); } catch { /* tant pis */ }
+    }
+  }
 }

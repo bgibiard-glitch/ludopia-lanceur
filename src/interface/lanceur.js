@@ -2236,13 +2236,21 @@ function dessinerChats() {
 
   const liste = etat.social.connecte ? (etat.amis?.amis || []) : [];
   const salons = etat.social.connecte ? etat.salons : [];
-  const quelqueChose = liste.length > 0 || salons.length > 0;
+  const desServeurs = etat.social.connecte && typeof srv !== 'undefined' && srv.liste.length > 0;
+  const quelqueChose = liste.length > 0 || salons.length > 0 || desServeurs
+    // Connecté mais sans rien : la colonne montre au moins le bouton
+    // « explorer », sinon les serveurs sont introuvables.
+    || etat.social.connecte;
 
   colonne.hidden = !quelqueChose;
   document.body.classList.toggle('avec-chats', quelqueChose);
   if (!quelqueChose) return;
 
   colonne.textContent = '';
+
+  // Les serveurs d'abord : ce sont les lieux les plus larges, et leur colonne
+  // d'icônes est l'entrée du mode communautaire.
+  if (typeof pastillesServeurs === 'function') pastillesServeurs(colonne);
 
   const titre = document.createElement('p');
   titre.className = 'chats-titre';
@@ -3005,6 +3013,7 @@ async function demarrer() {
     if (e.connecte) {
       await rafraichirAmis();
       await rafraichirSalons();
+      if (typeof rafraichirServeurs === 'function') await rafraichirServeurs();
       dessinerRail();
       dessinerChats();
       if (etat.vue === 'accueil') dessinerAccueil();

@@ -2235,3 +2235,673 @@ body.avec-chats .cadre {
 @media (prefers-reduced-motion: reduce) {
   .serie--peril { animation: none; }
 }
+
+/* =============================================================================
+   LES SERVEURS
+   Colonne d'icônes (partagée avec les conversations), colonne de salons à la
+   place de la bibliothèque, contenu au milieu, membres à droite.
+   ============================================================================= */
+
+.chat-pastille--serveur .chat-rond--serveur {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  font-size: 1.15rem;
+  background: color-mix(in srgb, var(--teinte, var(--brand)) 20%, var(--bg-2));
+  border: 1px solid color-mix(in srgb, var(--teinte, var(--brand)) 45%, transparent);
+  /* Le carré arrondi distingue un lieu d'une personne, dont la pastille est
+     ronde. On le lit sans y penser. */
+  border-radius: 13px;
+  transition: border-radius 0.18s var(--ease);
+}
+
+.chat-pastille--serveur[aria-current="true"] .chat-rond--serveur,
+.chat-pastille--serveur:hover .chat-rond--serveur {
+  border-radius: 9px;
+  border-color: var(--teinte, var(--brand));
+}
+
+.chat-sceau {
+  position: absolute;
+  right: -2px;
+  bottom: -2px;
+  display: grid;
+  place-items: center;
+  width: 15px;
+  height: 15px;
+  font-size: 0.6rem;
+  font-style: normal;
+  color: #08131a;
+  background: var(--vert);
+  border-radius: 50%;
+  border: 2px solid var(--bg);
+}
+
+.chat-pastille--plus {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  margin: 2px auto;
+  font-size: 1.3rem;
+  color: var(--vert);
+  background: var(--surface);
+  border: 1px dashed var(--line-strong);
+  border-radius: 13px;
+  cursor: pointer;
+  transition: background 0.15s var(--ease), border-radius 0.18s var(--ease);
+}
+.chat-pastille--plus:hover {
+  background: color-mix(in srgb, var(--vert) 14%, transparent);
+  border-radius: 9px;
+}
+
+/* --- la colonne des salons --- */
+
+.rail-serveur {
+  display: flex;
+  flex-direction: column;
+  width: var(--rail-w);
+  min-width: var(--rail-w);
+  overflow-y: auto;
+  background: var(--bg-2);
+  border-right: 1px solid var(--line);
+}
+
+.srv-tete {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.9rem 0.9rem;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--teinte, var(--brand)) 16%, var(--bg-2)), var(--bg-2));
+  border-bottom: 1px solid var(--line);
+}
+
+.srv-retour,
+.srv-menu {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  font: inherit;
+  color: var(--ink-dim);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  cursor: pointer;
+}
+.srv-retour:hover,
+.srv-menu:hover { background: var(--surface-2); color: var(--ink); }
+
+.srv-nom {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.98rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.srv-sceau {
+  display: inline-grid;
+  place-items: center;
+  width: 15px;
+  height: 15px;
+  margin-left: 0.35rem;
+  font-size: 0.6rem;
+  font-style: normal;
+  color: #08131a;
+  background: var(--vert);
+  border-radius: 50%;
+  vertical-align: middle;
+}
+
+.srv-categorie {
+  margin: 1rem 0.9rem 0.3rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.srv-salon-bloc { padding: 0 0.5rem; }
+
+.srv-salon {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  width: 100%;
+  padding: 0.42rem 0.5rem;
+  font: inherit;
+  font-size: 0.92rem;
+  color: var(--ink-dim);
+  background: transparent;
+  border: 0;
+  border-radius: 8px;
+  cursor: pointer;
+  text-align: left;
+}
+.srv-salon:hover { background: var(--surface); color: var(--ink); }
+.srv-salon[aria-current="true"] { background: var(--surface-2); color: var(--ink); }
+
+.srv-salon-icone {
+  flex: 0 0 auto;
+  width: 1.1rem;
+  text-align: center;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.srv-salon-nom {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.srv-non-lus {
+  flex: 0 0 auto;
+  min-width: 18px;
+  padding: 0 5px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-align: center;
+  line-height: 17px;
+  color: #fff;
+  background: var(--rouge);
+  border-radius: 999px;
+}
+
+.srv-voix {
+  list-style: none;
+  margin: 0 0 0.2rem 2.1rem;
+  padding: 0;
+}
+.srv-voix li {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.12rem 0;
+  font-size: 0.8rem;
+  color: var(--vert);
+}
+.srv-voix li::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--vert);
+}
+
+.srv-ajout {
+  margin: 0.8rem 0.9rem;
+  padding: 0.45rem 0.6rem;
+  font: inherit;
+  font-size: 0.85rem;
+  color: var(--muted);
+  background: transparent;
+  border: 1px dashed var(--line-strong);
+  border-radius: 8px;
+  cursor: pointer;
+  text-align: left;
+}
+.srv-ajout:hover { color: var(--ink); border-color: var(--ink-dim); }
+
+.srv-ajout-form {
+  display: flex;
+  gap: 0.35rem;
+  margin: 0 0.9rem 0.9rem;
+}
+.srv-ajout-form input,
+.srv-ajout-form select {
+  min-width: 0;
+  padding: 0.4rem 0.5rem;
+  font: inherit;
+  font-size: 0.85rem;
+  color: inherit;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+.srv-ajout-form input { flex: 1; }
+
+/* --- le bandeau et le fil --- */
+
+.srv-bandeau {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  align-items: baseline;
+  gap: 0.8rem;
+  padding: 1rem 1.4rem;
+  background: rgba(var(--voile), 0.8);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--line);
+}
+
+.srv-bandeau-nom {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.05rem;
+}
+
+.srv-bandeau-sujet {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.85rem;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.srv-bandeau-outils { margin-left: auto; display: flex; gap: 0.4rem; }
+
+.srv-fil {
+  flex: 1;
+  padding: 1rem 1.4rem 0.6rem;
+  overflow-y: auto;
+}
+
+.srv-msg { margin-top: 0.9rem; }
+.srv-msg--suite { margin-top: 0.12rem; }
+
+.srv-msg-tete {
+  display: flex;
+  align-items: baseline;
+  gap: 0.55rem;
+}
+.srv-msg-tete b { font-size: 0.92rem; }
+.srv-msg-tete span { font-size: 0.72rem; color: var(--muted); }
+
+.srv-msg-texte {
+  font-size: 0.93rem;
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+}
+
+.srv-ecrire {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding: 0.8rem 1.4rem 1.1rem;
+}
+.srv-ecrire input {
+  flex: 1;
+  min-width: 0;
+  padding: 0.65rem 0.9rem;
+  font: inherit;
+  color: inherit;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+.srv-ecrire input:focus { outline: none; border-color: var(--brand); }
+.srv-ecrire .jouer { padding: 0.55rem 1rem; }
+.srv-retour-envoi { flex-basis: 100%; }
+
+.srv-lecture {
+  padding: 0.8rem 1.4rem 1.1rem;
+  font-size: 0.86rem;
+  color: var(--muted);
+}
+
+/* --- la salle vocale --- */
+
+.srv-salle {
+  flex: 1;
+  display: flex;
+  flex-wrap: wrap;
+  align-content: center;
+  justify-content: center;
+  gap: 1rem;
+  padding: 1.4rem;
+  overflow-y: auto;
+}
+
+.srv-voix-carte {
+  display: grid;
+  place-items: center;
+  gap: 0.5rem;
+  min-width: 130px;
+  padding: 1.2rem 1rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+}
+.srv-voix-carte--muet { opacity: 0.65; }
+
+.srv-voix-rond {
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 1.3rem;
+  color: #fff;
+  background: var(--teinte, var(--brand));
+  border-radius: 50%;
+}
+
+.srv-salle-barre {
+  display: flex;
+  justify-content: center;
+  gap: 0.6rem;
+  padding: 0 1.4rem 1.4rem;
+}
+
+/* --- la liste des membres --- */
+
+.membres {
+  display: none;
+  width: 230px;
+  min-width: 230px;
+  overflow-y: auto;
+  padding: 0.9rem 0.7rem;
+  background: var(--bg-2);
+  border-left: 1px solid var(--line);
+}
+body.avec-membres.dans-serveur .membres { display: block; }
+
+.membres-titre {
+  margin: 0 0.3rem 0.6rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.membres-section {
+  margin: 0.8rem 0.3rem 0.3rem;
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+
+.membre {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  width: 100%;
+  padding: 0.35rem 0.4rem;
+  font: inherit;
+  color: inherit;
+  background: transparent;
+  border: 0;
+  border-radius: 8px;
+  cursor: pointer;
+  text-align: left;
+}
+.membre:hover { background: var(--surface); }
+.membre--hors { opacity: 0.5; }
+
+.membre-rond {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #fff;
+  background: var(--teinte, var(--brand));
+  border-radius: 50%;
+}
+
+.membre-bloc { min-width: 0; display: grid; }
+.membre-nom {
+  font-size: 0.88rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.membre-nom i { margin-left: 0.3rem; font-style: normal; font-size: 0.72rem; }
+.membre-sous {
+  font-size: 0.74rem;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* --- l'annuaire --- */
+
+.srv-annuaire {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 290px), 1fr));
+  gap: 0.9rem;
+  margin-top: 1.2rem;
+}
+
+.srv-carte {
+  display: grid;
+  gap: 0.6rem;
+  padding: 1rem 1.1rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-top: 3px solid var(--teinte, var(--brand));
+  border-radius: 14px;
+}
+
+.srv-carte-tete { display: flex; align-items: center; gap: 0.7rem; }
+
+.srv-carte-rond {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  font-size: 1.25rem;
+  background: color-mix(in srgb, var(--teinte, var(--brand)) 18%, transparent);
+  border-radius: 12px;
+}
+
+.srv-carte-nom { font-family: var(--font-display); font-weight: 700; }
+.srv-carte-sous { font-size: 0.78rem; color: var(--muted); }
+.srv-carte-desc {
+  font-size: 0.86rem;
+  color: var(--ink-dim);
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.jouer--mini { padding: 0.45rem 0.9rem; font-size: 0.86rem; }
+
+.srv-code-form {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.8rem;
+  max-width: 380px;
+}
+.srv-code-form input {
+  flex: 1;
+  min-width: 0;
+  padding: 0.55rem 0.8rem;
+  font: inherit;
+  color: inherit;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+
+/* --- création --- */
+
+.srv-form {
+  display: grid;
+  gap: 0.9rem;
+  max-width: 460px;
+}
+.srv-form input,
+.srv-form textarea,
+.srv-form select {
+  padding: 0.65rem 0.9rem;
+  font: inherit;
+  color: inherit;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  resize: vertical;
+}
+.srv-form input:focus,
+.srv-form textarea:focus { outline: none; border-color: var(--brand); }
+
+.srv-visibilite { display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; }
+
+.srv-visi {
+  display: grid;
+  gap: 0.25rem;
+  padding: 0.8rem 0.9rem;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  cursor: pointer;
+}
+.srv-visi span { font-size: 0.78rem; color: var(--muted); line-height: 1.4; }
+.srv-visi--actif { border-color: var(--brand); background: color-mix(in srgb, var(--brand) 10%, transparent); }
+
+.srv-couleurs { display: flex; flex-wrap: wrap; gap: 0.45rem; }
+
+.srv-couleur {
+  width: 26px;
+  height: 26px;
+  background: var(--c);
+  border: 2px solid transparent;
+  border-radius: 50%;
+  cursor: pointer;
+}
+.srv-couleur--actif { border-color: var(--ink); }
+
+/* --- rôles --- */
+
+.srv-role { border-left: 3px solid var(--teinte, var(--muted)); }
+
+.srv-role-tete { display: flex; align-items: center; gap: 0.7rem; }
+
+.srv-role-nom {
+  flex: 1;
+  min-width: 0;
+  padding: 0.45rem 0.7rem;
+  font: inherit;
+  font-weight: 600;
+  color: var(--teinte, var(--ink));
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 9px;
+}
+
+.srv-droits {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr));
+  gap: 0.25rem 1rem;
+  margin: 0.7rem 0;
+}
+
+.srv-droit {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.86rem;
+  color: var(--ink-dim);
+  cursor: pointer;
+}
+.srv-droit input { accent-color: var(--brand); }
+
+.btn-mini--danger { border-color: var(--rouge); color: var(--rouge); }
+.btn-mini--danger:hover { background: color-mix(in srgb, var(--rouge) 12%, transparent); }
+
+/* --- partage --- */
+
+.srv-partage-voile {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  display: grid;
+  place-items: center;
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.srv-partage-boite {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.6rem;
+  width: min(92vw, 440px);
+  padding: 1.2rem 1.3rem 1.3rem;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5);
+}
+
+.srv-partage-titre {
+  grid-column: 1 / -1;
+  font-family: var(--font-display);
+  font-weight: 700;
+}
+
+.srv-partage-boite input {
+  min-width: 0;
+  padding: 0.55rem 0.8rem;
+  font: inherit;
+  font-size: 0.85rem;
+  color: inherit;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+
+.srv-partage-reseaux {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+/* ============================================================
+   LA GRILLE EN MODE SERVEUR
+   Le cadre est une grille aux colonnes explicites. La colonne des salons
+   remplace celle de la bibliotheque : meme gabarit, jamais une piste de plus —
+   une piste implicite fait deborder toute la fenetre.
+   ============================================================ */
+
+/* `display: flex` et consorts ecrasent la regle [hidden] du navigateur, qui
+   pese moins lourd qu'un selecteur de classe. Sans ces trois lignes, le rail
+   de la bibliotheque restait visible sous les salons du serveur. */
+.rail[hidden],
+.rail-serveur[hidden],
+.membres[hidden] { display: none !important; }
+
+body.dans-serveur.avec-membres .cadre {
+  grid-template-columns: var(--rail-w) minmax(0, 1fr) 230px;
+}
+body.avec-chats.dans-serveur .cadre {
+  grid-template-columns: var(--chats-w) var(--rail-w) minmax(0, 1fr);
+}
+body.avec-chats.dans-serveur.avec-membres .cadre {
+  grid-template-columns: var(--chats-w) var(--rail-w) minmax(0, 1fr) 230px;
+}
+
+/* La scene d'un serveur s'organise en pile : bandeau fixe, fil qui prend tout,
+   champ d'ecriture en bas. */
+body.dans-serveur .scene {
+  display: flex;
+  flex-direction: column;
+}

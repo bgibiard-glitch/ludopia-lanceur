@@ -112,6 +112,40 @@ contextBridge.exposeInMainWorld('ludopia', {
   /* Le mode audio. La négociation passe par le processus principal, mais la
      connexion elle-même vit dans l'interface : c'est là que se trouvent
      RTCPeerConnection et le micro. */
+  serveurs: {
+    mesServeurs: () => ipcRenderer.invoke('srv:liste'),
+    creer: (d) => ipcRenderer.invoke('srv:creer', d),
+    rejoindre: (d) => ipcRenderer.invoke('srv:rejoindre', d),
+    quitter: (id) => ipcRenderer.invoke('srv:quitter', id),
+    modifier: (d) => ipcRenderer.invoke('srv:modifier', d),
+    contenu: (id) => ipcRenderer.invoke('srv:contenu', id),
+    membres: (id) => ipcRenderer.invoke('srv:membres', id),
+    exclure: (id, compte) => ipcRenderer.invoke('srv:exclure', id, compte),
+    ajouterSalon: (d) => ipcRenderer.invoke('srv:ajouterSalon', d),
+    supprimerSalon: (salon) => ipcRenderer.invoke('srv:supprimerSalon', salon),
+    annuaire: (filtres) => ipcRenderer.invoke('srv:annuaire', filtres),
+    roles: (id) => ipcRenderer.invoke('srv:roles', id),
+    creerRole: (d) => ipcRenderer.invoke('srv:creerRole', d),
+    modifierRole: (d) => ipcRenderer.invoke('srv:modifierRole', d),
+    supprimerRole: (role) => ipcRenderer.invoke('srv:supprimerRole', role),
+    attribuerRole: (role, compte, retirer) =>
+      ipcRenderer.invoke('srv:attribuerRole', role, compte, retirer),
+    surnom: (id, surnom) => ipcRenderer.invoke('srv:surnom', id, surnom),
+  },
+
+  boutique: {
+    lire: (langue) => ipcRenderer.invoke('boutique:lire', langue),
+    acheter: (article) => ipcRenderer.invoke('boutique:acheter', article),
+    equiper: (emplacement, article) =>
+      ipcRenderer.invoke('boutique:equiper', emplacement, article),
+  },
+
+  bourse: {
+    lire: () => ipcRenderer.invoke('bourse:lire'),
+    bonus: () => ipcRenderer.invoke('bourse:bonus'),
+    offrir: (vers, montant, mot) => ipcRenderer.invoke('bourse:offrir', vers, montant, mot),
+  },
+
   theme: {
     etat: () => ipcRenderer.invoke('theme:etat'),
     surChangement: (rappel) => {
@@ -136,6 +170,12 @@ contextBridge.exposeInMainWorld('ludopia', {
     },
 
     /** L'utilisateur a cliqué « Répondre » dans l'avis système. */
+    salonEntrer: (salon) => ipcRenderer.invoke('voix:salonEntrer', salon),
+    salonBattement: (salon, muet) => ipcRenderer.invoke('voix:salonBattement', salon, muet),
+    salonSortir: (salon) => ipcRenderer.invoke('voix:salonSortir', salon),
+    salonSignal: (salon, vers, sorte, charge) =>
+      ipcRenderer.invoke('voix:salonSignal', salon, vers, sorte, charge),
+
     surDecrocher: (rappel) => {
       const ecouteur = (_evt, appel) => rappel(appel);
       ipcRenderer.on('voix:decrocher', ecouteur);
