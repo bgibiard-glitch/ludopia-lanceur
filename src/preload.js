@@ -168,6 +168,11 @@ contextBridge.exposeInMainWorld('ludopia', {
     },
   },
 
+  nouveautes: {
+    etat: () => ipcRenderer.invoke('nouveautes:etat'),
+    vues: () => ipcRenderer.send('nouveautes:vues'),
+  },
+
   theme: {
     etat: () => ipcRenderer.invoke('theme:etat'),
     surChangement: (rappel) => {

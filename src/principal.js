@@ -83,9 +83,10 @@ function themeEffectif() {
   return nativeTheme.shouldUseDarkColors ? 'sombre' : 'clair';
 }
 const SITE = 'https://ludopia.fr';
-// Servi depuis `assets/` et non `/lanceur/` : le dossier `lanceur/` du dépôt
-// contient les sources de cette application, il n'est jamais mis en ligne.
-const CATALOGUE_DISTANT = `${SITE}/assets/catalogue-jeux.json`;
+/* Le catalogue vivant : le fichier soigné du site, ENRICHI par le service des
+   jeux qui se sont enrôlés eux-mêmes. Un jeu qui s'enregistre apparaît ici au
+   prochain rafraîchissement, sans redéploiement du site ni du lanceur. */
+const CATALOGUE_DISTANT = 'https://ludopia-social.bgibiard.workers.dev/catalogue';
 const ACTUALITES = `${SITE}/assets/actualites.json`;
 
 /** Une seule instance : un second lancement réveille la fenêtre existante. */
@@ -706,6 +707,15 @@ function brancherIpc() {
     (_e, vers, texte, repondA) => social.envoyer(vers, texte, repondA));
 
   // --- le mode audio ---
+  /* Le panneau « Quoi de neuf » : l'accueil le montre UNE fois par version.
+     Sans lui, une mise à jour silencieuse donne « j'ai l'impression qu'il n'y
+     a rien de nouveau » — dit mot pour mot par le premier utilisateur. */
+  ipcMain.handle('nouveautes:etat', () => ({
+    version: app.getVersion(),
+    aMontrer: donnees.get('versionVue') !== app.getVersion(),
+  }));
+  ipcMain.on('nouveautes:vues', () => donnees.set('versionVue', app.getVersion()));
+
   ipcMain.handle('theme:etat', () => ({
     choisi: reglages().theme,
     effectif: themeEffectif(),

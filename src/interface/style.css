@@ -3240,3 +3240,19 @@ body.dans-serveur .scene {
 .ev-detail { margin-top: 0.25rem; font-size: 0.88rem; color: var(--ink-dim); }
 
 .ev-actions { display: grid; gap: 0.4rem; }
+
+
+/* ============================================================
+   QUOI DE NEUF — une fois par version.
+   ============================================================ */
+.neuf {
+  padding: 1.1rem 1.3rem;
+  background:
+    linear-gradient(120deg, color-mix(in srgb, var(--brand) 14%, transparent),
+      color-mix(in srgb, var(--vert) 8%, transparent));
+  border: 1px solid color-mix(in srgb, var(--brand) 35%, transparent);
+  border-radius: 16px;
+}
+.neuf h2 { margin-bottom: 0.5rem; }
+.neuf-ligne { padding: 0.2rem 0; font-size: 0.95rem; }
+.neuf .btn-mini { margin-top: 0.7rem; }

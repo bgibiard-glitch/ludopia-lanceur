@@ -498,6 +498,26 @@ let etat = {
 
 const T = () => TEXTES[etat.langue];
 
+/* Ce qui est neuf, par version. Trois lignes au plus : un panneau qui liste
+   tout n'est plus un panneau, c'est un journal des changements — et il existe
+   déjà, sur GitHub. On garde ici ce qui se VOIT. */
+const NOUVEAUTES = {
+  fr: {
+    '2.8.0': [
+      '🗓 Les rendez-vous de serveur : planifiez une soirée, chacun s’inscrit en un clic.',
+      '↩ Répondez à un message précis dans les salons — survolez, cliquez ↩.',
+      '🎮 Les nouveaux jeux enrôlés apparaissent tout seuls dans la bibliothèque.',
+    ],
+  },
+  en: {
+    '2.8.0': [
+      '🗓 Server events: plan an evening, everyone signs up in one click.',
+      '↩ Reply to a specific message in channels — hover, click ↩.',
+      '🎮 Newly enrolled games appear in the library by themselves.',
+    ],
+  },
+};
+
 // =============================================================================
 // Mise en forme
 // =============================================================================
@@ -3271,6 +3291,44 @@ function dessinerAccueil() {
   tete.append(note);
   scene.append(tete);
 
+  /* --- quoi de neuf : une fois par version ----------------------------------
+     Le panneau se ferme d'un clic et ne revient pas. Il vient AVANT tout le
+     reste : c'est sa seule chance d'être lu. */
+  if (etat.nouveautes?.aMontrer) {
+    const lignes = (NOUVEAUTES[etat.langue] || {})[etat.nouveautes.version];
+    if (lignes) {
+      const panneau = document.createElement('section');
+      panneau.className = 'acc-bloc neuf';
+
+      const h2 = document.createElement('h2');
+      h2.textContent = `✨ ${etat.langue === 'fr' ? 'Nouveau dans la' : 'New in'} ${etat.nouveautes.version}`;
+      panneau.append(h2);
+
+      for (const ligne of lignes) {
+        const li = document.createElement('p');
+        li.className = 'neuf-ligne';
+        li.textContent = ligne;
+        panneau.append(li);
+      }
+
+      const compris = document.createElement('button');
+      compris.type = 'button';
+      compris.className = 'btn-mini';
+      compris.textContent = etat.langue === 'fr' ? 'Compris !' : 'Got it!';
+      compris.addEventListener('click', () => {
+        window.ludopia.nouveautes.vues();
+        etat.nouveautes.aMontrer = false;
+        panneau.remove();
+      });
+      panneau.append(compris);
+      scene.append(panneau);
+    } else {
+      // Version sans notes : ne rien montrer, et ne pas redemander.
+      window.ludopia.nouveautes.vues();
+      etat.nouveautes.aMontrer = false;
+    }
+  }
+
   /* --- aujourd'hui : ce qui mérite un geste maintenant ---------------------
      La section n'existe que si elle a quelque chose à dire : un bonus à
      prendre, une série qui se joue aujourd'hui, un ami en pleine partie. Un
@@ -3654,6 +3712,7 @@ async function demarrer() {
 
   /* L'apparence, avant tout le reste : appliquée après le premier dessin, on
      verrait le sombre passer au clair sous les yeux de qui a choisi le clair. */
+  etat.nouveautes = await window.ludopia.nouveautes.etat();
   etat.theme = await window.ludopia.theme.etat();
   appliquerTheme(etat.theme);
   window.ludopia.theme.surChangement((t) => {
